@@ -1,10 +1,17 @@
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
-use std::ops::Div;
+use std::ops::{Add, Sub, Mul, Div};
+use std::collections::HashMap;
 
+pub enum Cell {
+    Symbol(String),
+    Number(f32),
+    List(Vec<Cell>),
+    Proc,
+    Lambda
+}
 
-pub struct Env;
+pub struct Env {
+    map : HashMap<String, Cell>
+}
 
 impl Env {
     pub fn add<T>(a: T, b: T) -> T::Output
