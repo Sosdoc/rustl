@@ -3,14 +3,24 @@ mod lisp;
 use lisp::env::{Env};
 use lisp::lex;
 
+use std::io;
+
 extern crate regex;
 
 fn main() {
 
-    let line = "( var some = ( 1 + 2 ) )";
-    for token in lex::tokenize(line) {
-        println!("{}", token);
+    println!("Lispr interpreter - v 0.1");
+    println!("^C to exit");
+
+    loop {
+        print!(">> ");
+
+        let mut input : String = String::new();
+
+        io::stdin().read_line(&mut input)
+            .ok()
+            .expect("Error when reading.");
+
+        println!("Your input was {}", input);
     }
-    let res = Env::add(1.0, 2.2);
-    println!("res : {}", res);
 }
