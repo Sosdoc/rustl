@@ -1,6 +1,6 @@
 mod lisp;
 
-use lisp::env::{Env};
+use lisp::env::{Environment};
 use lisp::lex;
 
 use std::io;

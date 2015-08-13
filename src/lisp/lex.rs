@@ -4,11 +4,13 @@ pub enum Token {
     Symbol(String),
     Number(i32),
     Float(f32),
-    // lists are groups of tokens
+    // TODO: should this be removed in favor of Option/env Token?
+    Nil,
+    // lists are vectors of tokens
     List(Vec<Token>)
 }
 
-
+// Produces a vector of Strings, with no empty ones
 pub fn tokenize(input : &str) -> Vec<String> {
     let formatted = format_braces(input);
     let mut tokens : Vec<String> = Vec::new();
@@ -24,12 +26,13 @@ pub fn tokenize(input : &str) -> Vec<String> {
     tokens
 }
 
+// Puts spaces befor and after braces
 fn format_braces(input : &str) -> String {
     input.replace("(", " ( ").replace(")", " ) ").trim().to_string()
 }
 
+// Consumes a vector of Strings, returning data to be used with eval
 pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
-
     let mut result : Option<Token> = None;
 
     if !tokens.is_empty() {
@@ -50,7 +53,7 @@ pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
             ")" => panic!("Unbalanced )"),
             s => {
                 // parse the single atom
-                result = parse_atom(s);
+                result = Some(parse_atom(s));
             }
         }
 
@@ -59,21 +62,19 @@ pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
     result
 }
 
-fn parse_atom(input : &str) -> Option<Token> {
+// Parses an atomic value (number/string)
+fn parse_atom(input : &str) -> Token {
     // try parsing as i32
     let n_int = input.parse::<i32>();
-
     if n_int.is_err() {
         // try parsing as f32
         let n_f = input.parse::<f32>();
-
         if n_f.is_err() {
-            // fuck this shit, return the fucking token
-            return Some(Token::Symbol(input.to_string()));
+            return Token::Symbol(input.to_string());
         }
-        return Some(Token::Float(n_f.unwrap()));
+        return Token::Float(n_f.unwrap());
     }
-    Some(Token::Number(n_int.unwrap()))
+    Token::Number(n_int.unwrap())
 }
 
 
@@ -103,5 +104,4 @@ fn test_parse_atom() {
     };
 
     assert_eq!(&token, atom);
-
 }
