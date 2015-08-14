@@ -1,8 +1,5 @@
 mod lisp;
 
-use lisp::env::{Environment};
-use lisp::lex;
-
 use std::io;
 
 extern crate regex;

@@ -1,13 +1,30 @@
-#[derive(Debug)]
+use std::fmt::{Debug, Formatter, Result};
+
 pub enum Token {
     // possible atomic tokens: symbols or numbers (either ints or floats)
     Symbol(String),
-    Number(i32),
-    Float(f32),
+    Number(f32),
+    Proc(fn(Token) -> Token),
     // TODO: should this be removed in favor of Option/env Token?
     Nil,
+    True,
+    False,
     // lists are vectors of tokens
     List(Vec<Token>)
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        match self {
+            &Token::Symbol(ref name) => write!(f, "s: {}", name),
+            &Token::Number(n) => write!(f, "{}", n),
+            &Token::List(ref tokens) => write!(f, "{:?}", tokens),
+            &Token::Proc(_) => write!(f, "proc"),
+            &Token::True => write!(f, "#t"),
+            &Token::False => write!(f, "#f"),
+            _ => write!(f, "unknown")
+        }
+    }
 }
 
 // Produces a vector of Strings, with no empty ones
@@ -72,9 +89,9 @@ fn parse_atom(input : &str) -> Token {
         if n_f.is_err() {
             return Token::Symbol(input.to_string());
         }
-        return Token::Float(n_f.unwrap());
+        return Token::Number(n_f.unwrap());
     }
-    Token::Number(n_int.unwrap())
+    Token::Number(n_int.unwrap() as f32)
 }
 
 
@@ -83,15 +100,15 @@ fn test_parse_atom() {
 
     let atom = "123";
     let token = match parse_atom(atom) {
-        Some(Token::Number(n)) => n,
-        _ => 0
+        Token::Number(n) => n,
+        _ => 0.0
     };
 
-    assert_eq!(token, 123);
+    assert_eq!(token, 123.0);
 
     let atom = "12.3";
     let token = match parse_atom(atom) {
-        Some(Token::Float(n)) => n,
+        Token::Number(n) => n,
         _ => 0.0
     };
 
@@ -99,7 +116,7 @@ fn test_parse_atom() {
 
     let atom = "12g.3";
     let token = match parse_atom(atom) {
-        Some(Token::Symbol(n)) => n,
+        Token::Symbol(n) => n,
         _ => "wat".to_string()
     };
 
