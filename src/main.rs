@@ -10,14 +10,16 @@ fn main() {
     println!("^C to exit");
 
     loop {
-        print!(">> ");
-
         let mut input : String = String::new();
 
         io::stdin().read_line(&mut input)
             .ok()
             .expect("Error when reading.");
 
-        println!("Your input was {}", input);
+        let mut tok_vec = lisp::lex::tokenize(&input);
+        let tokens = lisp::lex::parse_tree_from_tokens(&mut tok_vec);
+        let result = lisp::env::eval(tokens.unwrap(), &lisp::env::Environment::default());
+
+        println!(":: {:?}", result);
     }
 }

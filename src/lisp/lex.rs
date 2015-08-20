@@ -7,6 +7,7 @@ pub enum Token {
     Proc(fn(Token) -> Token),
     // TODO: should this be removed in favor of Option/env Token?
     Nil,
+    // TODO: better as values in the env?
     True,
     False,
     // lists are vectors of tokens
