@@ -6,10 +6,10 @@ use std::fmt::{Debug, Display, Formatter, Result};
 pub enum Cell {
     Symbol(String),
     Number(f32),
-    Proc(fn(Cell) -> Cell),
     Nil,
     True,
     False,
+    Proc(fn(Cell) -> Cell),
     List(Vec<Cell>)
 }
 
@@ -22,7 +22,7 @@ impl Debug for Cell {
             Cell::Proc(_) => write!(f, "proc"),
             Cell::True => write!(f, "#t"),
             Cell::False => write!(f, "#f"),
-            _ => write!(f, "unknown")
+            Cell::Nil => write!(f, "nil")
         }
     }
 }
@@ -31,12 +31,12 @@ impl Display for Cell {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match *self {
             Cell::Symbol(ref name) => write!(f, "{}", name),
-            Cell::Number(n) => write!(f, "{:3}", n),
+            Cell::Number(n) => write!(f, "{}", n),
             Cell::List(ref tokens) => write!(f, "{:?}", tokens),
             Cell::Proc(_) => write!(f, "proc"),
             Cell::True => write!(f, "#t"),
             Cell::False => write!(f, "#f"),
-            _ => write!(f, "unknown")
+            Cell::Nil => write!(f, "nil")
         }
     }
 }

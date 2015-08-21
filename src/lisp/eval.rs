@@ -3,9 +3,7 @@ use lisp::cell::Cell;
 use lisp::env::Environment;
 
 pub fn eval(token : Cell, env : &mut Environment) -> Cell {
-
     match token {
-
         Cell::Symbol(name) => {
             match *env.map.get(&name).unwrap() {
                 Cell::Number(n) => Cell::Number(n),
@@ -14,7 +12,6 @@ pub fn eval(token : Cell, env : &mut Environment) -> Cell {
             }
         },
         Cell::Number(n) => Cell::Number(n),
-
         Cell::List(mut tokens) => {
             // This branch does some heavy lifting
             // match on the first token then take action
@@ -36,7 +33,7 @@ pub fn eval(token : Cell, env : &mut Environment) -> Cell {
                     // TODO: some keyword implementations here
                     let result : Cell = match name.as_ref() {
                         "quote" => {
-                            // returns the following token literally (should it be a symbol?)
+                            // returns the following token literally (should it be converted to a symbol?)
                             tokens.remove(0)
                         },
                         "if" => {
@@ -57,14 +54,13 @@ pub fn eval(token : Cell, env : &mut Environment) -> Cell {
 
                     result
                 }
-
             } else {
                 // first is not a symbol, it's a regular list
                 // TODO: should put back the first element
-                Cell::Nil
+                tokens.insert(0, first);
+                Cell::List(tokens)
             }
         },
-
 
         _ => panic!("Unrecognized token") //Cell::Nil
     }
@@ -89,7 +85,7 @@ fn eval_returns_pi() {
         _ => 0.0
     };
 
-    assert_eq!(res, 3.14);
+    assert_eq!(res, 3.14159265);
 }
 
 

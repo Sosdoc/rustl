@@ -16,12 +16,18 @@ impl Environment {
     // Stub for default Environment
     pub fn default() -> Environment {
         let mut env = Environment::new();
-        env.map.insert("pi".to_string(), Cell::Number(3.14));
+        env.map.insert("pi".to_string(), Cell::Number(3.14159265));
 
         env.map.insert("+".to_string(), Cell::Proc(Environment::add));
         env.map.insert("-".to_string(), Cell::Proc(Environment::sub));
         env.map.insert("*".to_string(), Cell::Proc(Environment::mul));
         env.map.insert("/".to_string(), Cell::Proc(Environment::div));
+
+        env.map.insert(">".to_string(), Cell::Proc(Environment::gt));
+        env.map.insert(">=".to_string(), Cell::Proc(Environment::gte));
+        env.map.insert("<".to_string(), Cell::Proc(Environment::lt));
+        env.map.insert("<=".to_string(), Cell::Proc(Environment::lte));
+        env.map.insert("=".to_string(), Cell::Proc(Environment::eq));
 
         env
     }
@@ -63,7 +69,7 @@ impl Environment {
         }
     }
 
-    pub fn mul(args : Cell) -> Cell {
+    fn mul(args : Cell) -> Cell {
         match args {
             Cell::List(v) => {
                 let mut mul : f32 = 1.0;
@@ -79,7 +85,7 @@ impl Environment {
         }
     }
 
-    pub fn div(args : Cell) -> Cell {
+    fn div(args : Cell) -> Cell {
         match args {
             Cell::List(mut v) => {
                 let mut div : f32 = match v.remove(0) {
@@ -97,6 +103,72 @@ impl Environment {
                 Cell::Number(div)
             },
             _ => Cell::Nil
+        }
+    }
+
+    fn gt(args : Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(numbers) => {
+                if numbers[0] > numbers[1] {Cell::True} else {Cell::False}
+            },
+            _ => Cell::Nil
+        }
+    }
+
+    fn gte(args : Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(numbers) => {
+                if numbers[0] >= numbers[1] {Cell::True} else {Cell::False}
+            },
+            _ => Cell::Nil
+        }
+    }
+
+    fn lt(args : Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(numbers) => {
+                if numbers[0] < numbers[1] {Cell::True} else {Cell::False}
+            },
+            _ => Cell::Nil
+        }
+    }
+
+    fn lte(args : Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(numbers) => {
+                if numbers[0] <= numbers[1] {Cell::True} else {Cell::False}
+            },
+            _ => Cell::Nil
+        }
+    }
+
+    fn eq(args : Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(numbers) => {
+                if numbers[0] == numbers[1] {Cell::True} else {Cell::False}
+            },
+            _ => Cell::Nil
+        }
+    }
+
+    fn extract_two_numbers(args : Cell) -> Option<Vec<f32>> {
+        match args {
+            Cell::List(args) => {
+                let mut numbers = vec![];
+
+                if args.len() == 2 {
+                    for cell in args {
+                        match cell {
+                            Cell::Number(n) => numbers.push(n),
+                            _ => panic!("Cannot compare {}", cell)
+                        }
+                    }
+                    Some(numbers)
+                } else {
+                    None
+                }
+            },
+            _ => None
         }
     }
 }

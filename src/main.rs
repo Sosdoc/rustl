@@ -1,7 +1,6 @@
 mod lisp;
 
 use std::io;
-
 use lisp::eval::{parse_and_eval};
 
 fn main() {
