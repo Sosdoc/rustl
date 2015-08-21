@@ -54,17 +54,18 @@ pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Cell> {
 
 // Parses an atomic value (number/string)
 fn parse_atom(input : &str) -> Cell {
-    // try parsing as i32
-    let n_int = input.parse::<i32>();
-    if n_int.is_err() {
-        // try parsing as f32
-        let n_f = input.parse::<f32>();
-        if n_f.is_err() {
-            return Cell::Symbol(input.to_string());
+    let n_f = input.parse::<f32>();
+
+    if n_f.is_err() {
+        match input {
+            "#t" => Cell::True,
+            "#f" => Cell::False,
+            "nil" => Cell::Nil,
+            _ => Cell::Symbol(input.to_string())
         }
-        return Cell::Number(n_f.unwrap());
+    } else {
+        Cell::Number(n_f.unwrap())
     }
-    Cell::Number(n_int.unwrap() as f32)
 }
 
 
