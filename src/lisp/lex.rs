@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter, Result};
+use std::fmt::{Debug, Display, Formatter, Result};
 
 pub enum Token {
     // possible atomic tokens: symbols or numbers (either ints or floats)
@@ -19,6 +19,20 @@ impl Debug for Token {
         match self {
             &Token::Symbol(ref name) => write!(f, "s: {}", name),
             &Token::Number(n) => write!(f, "{}", n),
+            &Token::List(ref tokens) => write!(f, "{:?}", tokens),
+            &Token::Proc(_) => write!(f, "proc"),
+            &Token::True => write!(f, "#t"),
+            &Token::False => write!(f, "#f"),
+            _ => write!(f, "unknown")
+        }
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        match self {
+            &Token::Symbol(ref name) => write!(f, "{}", name),
+            &Token::Number(n) => write!(f, "{:3}", n),
             &Token::List(ref tokens) => write!(f, "{:?}", tokens),
             &Token::Proc(_) => write!(f, "proc"),
             &Token::True => write!(f, "#t"),
