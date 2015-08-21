@@ -105,15 +105,14 @@ impl Environment {
     }
 }
 
-pub fn eval(token : Token, env : &Environment) -> Token {
+pub fn eval(token : Token, env : &mut Environment) -> Token {
 
     match token {
 
         Token::Symbol(name) => {
-            // check in the current env, return only values
-            // missing Symbol?
-            match env.map.get(&name).unwrap() {
-                &Token::Number(n) => Token::Number(n),
+            match *env.map.get(&name).unwrap() {
+                Token::Number(n) => Token::Number(n),
+                Token::Symbol(ref n) => Token::Symbol(n.to_string()),
                 _ => Token::Nil
             }
         },
@@ -126,7 +125,7 @@ pub fn eval(token : Token, env : &Environment) -> Token {
 
             if let Token::Symbol(name) = first {
 
-                if let &Token::Proc(f) = env.map.get(&name).unwrap() {
+                if let Some(&Token::Proc(f)) = env.map.get(&name) {
                     // eval each of the following tokens in the list
                     let mut args : Vec<Token> = Vec::new();
 
@@ -147,6 +146,12 @@ pub fn eval(token : Token, env : &Environment) -> Token {
                             Token::Nil
                         },
                         "set!" => {
+                            // usage: set! var_name expression
+                            if let Token::Symbol(name) = tokens.remove(0) {
+                                let t = eval(tokens.remove(0), env);
+                                env.map.insert(name, t);
+                            }
+
                             Token::Nil
                         }
 
@@ -173,7 +178,7 @@ pub fn eval(token : Token, env : &Environment) -> Token {
 fn parse_and_eval(input : &str) -> Token {
     let mut str_vec = lisp::lex::tokenize(input);
     let tokens = lisp::lex::parse_tree_from_tokens(&mut str_vec);
-    lisp::env::eval(tokens.unwrap(), &lisp::env::Environment::default())
+    lisp::env::eval(tokens.unwrap(), &mut lisp::env::Environment::default())
 }
 
 
