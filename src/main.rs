@@ -2,7 +2,7 @@ mod lisp;
 
 use std::io;
 
-extern crate regex;
+use lisp::eval::{parse_and_eval};
 
 fn main() {
 
@@ -18,10 +18,6 @@ fn main() {
             .ok()
             .expect("Error when reading.");
 
-        let mut tok_vec = lisp::lex::tokenize(&input);
-        let tokens = lisp::lex::parse_tree_from_tokens(&mut tok_vec);
-        let result = lisp::env::eval(tokens.unwrap(), &mut env);
-
-        println!(":: {}", result);
+        println!(":: {}", parse_and_eval(&input, &mut env));
     }
 }

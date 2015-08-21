@@ -1,46 +1,4 @@
-use std::fmt::{Debug, Display, Formatter, Result};
-
-pub enum Token {
-    // possible atomic tokens: symbols or numbers (either ints or floats)
-    Symbol(String),
-    Number(f32),
-    Proc(fn(Token) -> Token),
-    // TODO: should this be removed in favor of Option/env Token?
-    Nil,
-    // TODO: better as values in the env?
-    True,
-    False,
-    // lists are vectors of tokens
-    List(Vec<Token>)
-}
-
-impl Debug for Token {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        match self {
-            &Token::Symbol(ref name) => write!(f, "s: {}", name),
-            &Token::Number(n) => write!(f, "{}", n),
-            &Token::List(ref tokens) => write!(f, "{:?}", tokens),
-            &Token::Proc(_) => write!(f, "proc"),
-            &Token::True => write!(f, "#t"),
-            &Token::False => write!(f, "#f"),
-            _ => write!(f, "unknown")
-        }
-    }
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        match self {
-            &Token::Symbol(ref name) => write!(f, "{}", name),
-            &Token::Number(n) => write!(f, "{:3}", n),
-            &Token::List(ref tokens) => write!(f, "{:?}", tokens),
-            &Token::Proc(_) => write!(f, "proc"),
-            &Token::True => write!(f, "#t"),
-            &Token::False => write!(f, "#f"),
-            _ => write!(f, "unknown")
-        }
-    }
-}
+use lisp::cell::Cell;
 
 // Produces a vector of Strings, with no empty ones
 pub fn tokenize(input : &str) -> Vec<String> {
@@ -64,8 +22,8 @@ fn format_braces(input : &str) -> String {
 }
 
 // Consumes a vector of Strings, returning data to be used with eval
-pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
-    let mut result : Option<Token> = None;
+pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Cell> {
+    let mut result : Option<Cell> = None;
 
     if !tokens.is_empty() {
         let curr_token = tokens.remove(0);
@@ -73,14 +31,14 @@ pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
         match curr_token.as_ref() {
             "(" => {
                     // build a list
-                    let mut l : Vec<Token> = Vec::new();
+                    let mut l : Vec<Cell> = Vec::new();
 
                     while &tokens[0] != ")" {
                         l.push(parse_tree_from_tokens(tokens).unwrap());
                     }
 
                     tokens.remove(0);
-                    result = Some(Token::List(l));
+                    result = Some(Cell::List(l));
                 },
             ")" => panic!("Unbalanced )"),
             s => {
@@ -95,18 +53,18 @@ pub fn parse_tree_from_tokens(tokens : &mut Vec<String>) -> Option<Token> {
 }
 
 // Parses an atomic value (number/string)
-fn parse_atom(input : &str) -> Token {
+fn parse_atom(input : &str) -> Cell {
     // try parsing as i32
     let n_int = input.parse::<i32>();
     if n_int.is_err() {
         // try parsing as f32
         let n_f = input.parse::<f32>();
         if n_f.is_err() {
-            return Token::Symbol(input.to_string());
+            return Cell::Symbol(input.to_string());
         }
-        return Token::Number(n_f.unwrap());
+        return Cell::Number(n_f.unwrap());
     }
-    Token::Number(n_int.unwrap() as f32)
+    Cell::Number(n_int.unwrap() as f32)
 }
 
 
@@ -115,7 +73,7 @@ fn test_parse_atom() {
 
     let atom = "123";
     let token = match parse_atom(atom) {
-        Token::Number(n) => n,
+        Cell::Number(n) => n,
         _ => 0.0
     };
 
@@ -123,7 +81,7 @@ fn test_parse_atom() {
 
     let atom = "12.3";
     let token = match parse_atom(atom) {
-        Token::Number(n) => n,
+        Cell::Number(n) => n,
         _ => 0.0
     };
 
@@ -131,7 +89,7 @@ fn test_parse_atom() {
 
     let atom = "12g.3";
     let token = match parse_atom(atom) {
-        Token::Symbol(n) => n,
+        Cell::Symbol(n) => n,
         _ => "wat".to_string()
     };
 
