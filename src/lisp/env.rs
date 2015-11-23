@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 use lisp::cell::Cell;
 
-pub struct Environment{
-    pub map : HashMap<String, Cell>
+pub struct Environment {
+    pub map: HashMap<String, Cell>,
 }
 
 impl Environment {
 
     pub fn new() -> Environment {
-        Environment {
-            map : HashMap::new()
-        }
+        Environment { map: HashMap::new() }
     }
 
     // Stub for default Environment
@@ -32,126 +30,146 @@ impl Environment {
         env
     }
 
-    fn add(args : Cell) -> Cell {
+    fn add(args: Cell) -> Cell {
         match args {
             Cell::List(v) => {
-                let mut sum : f32 = 0.0;
+                let mut sum: f32 = 0.0;
                 for arg in v {
                     sum += match arg {
                         Cell::Number(n) => n,
-                        _ => panic!("Cannot add")
+                        _ => panic!("Cannot add"),
                     }
                 }
                 Cell::Number(sum)
-            },
-            _ => Cell::Nil
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn sub(args : Cell) -> Cell {
+    fn sub(args: Cell) -> Cell {
         match args {
             Cell::List(mut v) => {
-                let mut result : f32 = match v.remove(0) {
+                let mut result: f32 = match v.remove(0) {
                     Cell::Number(n) => n,
-                    _ => panic!("Cannot sub: not a number")
+                    _ => panic!("Cannot sub: not a number"),
                 };
 
                 for arg in v {
                     result -= match arg {
                         Cell::Number(n) => n,
-                        _ => panic!("Cannot sub: not a number")
+                        _ => panic!("Cannot sub: not a number"),
                     }
                 }
 
                 Cell::Number(result)
-            },
-            _ => Cell::Nil
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn mul(args : Cell) -> Cell {
+    fn mul(args: Cell) -> Cell {
         match args {
             Cell::List(v) => {
-                let mut mul : f32 = 1.0;
+                let mut mul: f32 = 1.0;
                 for arg in v {
                     mul *= match arg {
                         Cell::Number(n) => n,
-                        _ => panic!("Cannot add")
+                        _ => panic!("Cannot add"),
                     }
                 }
                 Cell::Number(mul)
-            },
-            _ => Cell::Nil
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn div(args : Cell) -> Cell {
+    fn div(args: Cell) -> Cell {
         match args {
             Cell::List(mut v) => {
-                let mut div : f32 = match v.remove(0) {
+                let mut div: f32 = match v.remove(0) {
                     Cell::Number(n) => n,
-                    _ => panic!("Cannot div: not a number")
+                    _ => panic!("Cannot div: not a number"),
                 };
 
                 for arg in v {
                     div /= match arg {
                         Cell::Number(n) if n != 0.0 => n,
-                        _ => panic!("Cannot div: not a number")
+                        _ => panic!("Cannot div: not a number"),
                     }
                 }
 
                 Cell::Number(div)
-            },
-            _ => Cell::Nil
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn gt(args : Cell) -> Cell {
+    fn gt(args: Cell) -> Cell {
+        match Environment::extract_two_numbers(args) {
+            Some(left, right) => {
+                if left > right {
+                    Cell::True
+                } else {
+                    Cell::False
+                }
+            }
+            _ => Cell::Nil,
+        }
+    }
+
+    fn gte(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
             Some(numbers) => {
-                if numbers[0] > numbers[1] {Cell::True} else {Cell::False}
-            },
-            _ => Cell::Nil
+                if left >= right {
+                    Cell::True
+                } else {
+                    Cell::False
+                }
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn gte(args : Cell) -> Cell {
+    fn lt(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
             Some(numbers) => {
-                if numbers[0] >= numbers[1] {Cell::True} else {Cell::False}
-            },
-            _ => Cell::Nil
+                if left < right {
+                    Cell::True
+                } else {
+                    Cell::False
+                }
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn lt(args : Cell) -> Cell {
+    fn lte(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
             Some(numbers) => {
-                if numbers[0] < numbers[1] {Cell::True} else {Cell::False}
-            },
-            _ => Cell::Nil
+                if left <= right {
+                    Cell::True
+                } else {
+                    Cell::False
+                }
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn lte(args : Cell) -> Cell {
+    fn eq(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
             Some(numbers) => {
-                if numbers[0] <= numbers[1] {Cell::True} else {Cell::False}
-            },
-            _ => Cell::Nil
+                if left == right {
+                    Cell::True
+                } else {
+                    Cell::False
+                }
+            }
+            _ => Cell::Nil,
         }
     }
 
-    fn eq(args : Cell) -> Cell {
-        match Environment::extract_two_numbers(args) {
-            Some(numbers) => {
-                if numbers[0] == numbers[1] {Cell::True} else {Cell::False}
-            },
-            _ => Cell::Nil
-        }
-    }
-
-    fn extract_two_numbers(args : Cell) -> Option<Vec<f32>> {
+    fn extract_two_numbers(args: Cell) -> Option<(f32, f32)> {
         match args {
             Cell::List(args) => {
                 let mut numbers = vec![];
@@ -160,15 +178,15 @@ impl Environment {
                     for cell in args {
                         match cell {
                             Cell::Number(n) => numbers.push(n),
-                            _ => panic!("Cannot compare {}", cell)
+                            _ => panic!("Cannot compare {}", cell),
                         }
                     }
-                    Some(numbers)
+                    Some(numbers[0], numbers[1])
                 } else {
                     None
                 }
-            },
-            _ => None
+            }
+            _ => None,
         }
     }
 }

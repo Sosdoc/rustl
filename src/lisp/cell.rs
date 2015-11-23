@@ -10,19 +10,19 @@ pub enum Cell {
     True,
     False,
     Proc(fn(Cell) -> Cell),
-    List(Vec<Cell>)
+    List(Vec<Cell>),
 }
 
 impl Debug for Cell {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match *self {
             Cell::Symbol(ref name) => write!(f, "s: {}", name),
-            Cell::Number(n) => write!(f, "{}", n),
+            Cell::Number(num) => write!(f, "{}", num),
             Cell::List(ref tokens) => write!(f, "{:?}", tokens),
             Cell::Proc(_) => write!(f, "proc"),
             Cell::True => write!(f, "#t"),
             Cell::False => write!(f, "#f"),
-            Cell::Nil => write!(f, "nil")
+            Cell::Nil => write!(f, "nil"),
         }
     }
 }
@@ -31,12 +31,12 @@ impl Display for Cell {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match *self {
             Cell::Symbol(ref name) => write!(f, "{}", name),
-            Cell::Number(n) => write!(f, "{}", n),
+            Cell::Number(number) => write!(f, "{}", number),
             Cell::List(ref tokens) => write!(f, "{:?}", tokens),
             Cell::Proc(_) => write!(f, "proc"),
             Cell::True => write!(f, "#t"),
             Cell::False => write!(f, "#f"),
-            Cell::Nil => write!(f, "nil")
+            Cell::Nil => write!(f, "nil"),
         }
     }
 }
@@ -48,7 +48,7 @@ impl Cell {
     pub fn is_atom(&self) -> bool {
         match *self {
             Cell::List(_) => false,
-            _ => true
+            _ => true,
         }
     }
 }
