@@ -76,9 +76,9 @@ pub fn parse_and_eval(input: &str, env: &mut Environment) -> Cell {
 #[test]
 fn eval_returns_pi() {
     let t = Cell::Symbol("pi".to_string());
-    let env = Environment::default();
+    let mut env = Environment::default();
 
-    let res = match eval(t, &env) {
+    let res = match eval(t, &mut env) {
         Cell::Number(n) => n,
         _ => 0.0,
     };
@@ -92,9 +92,9 @@ fn eval_sum() {
     let args = vec![Cell::Symbol("+".to_string()), Cell::Number(2.0), Cell::Number(1.0)];
 
     let t = Cell::List(args);
-    let env = Environment::default();
+    let mut env = Environment::default();
 
-    let res = match eval(t, &env) {
+    let res = match eval(t, &mut env) {
         Cell::Number(n) => n,
         _ => 0.0,
     };
@@ -107,9 +107,9 @@ fn eval_sum() {
                     Cell::Number(1.0)];
 
     let t = Cell::List(args);
-    let env = Environment::default();
+    let mut env = Environment::default();
 
-    let res = match eval(t, &env) {
+    let res = match eval(t, &mut env) {
         Cell::Number(n) => n,
         _ => 0.0,
     };
@@ -126,9 +126,9 @@ fn eval_sub() {
                     Cell::Number(1.0)];
 
     let t = Cell::List(args);
-    let env = Environment::default();
+    let mut env = Environment::default();
 
-    let res = match eval(t, &env) {
+    let res = match eval(t, &mut env) {
         Cell::Number(n) => n,
         _ => -10.0,
     };

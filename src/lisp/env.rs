@@ -106,7 +106,7 @@ impl Environment {
 
     fn gt(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
-            Some(left, right) => {
+            Some((left, right)) => {
                 if left > right {
                     Cell::True
                 } else {
@@ -119,7 +119,7 @@ impl Environment {
 
     fn gte(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
-            Some(numbers) => {
+            Some((left, right)) => {
                 if left >= right {
                     Cell::True
                 } else {
@@ -132,7 +132,7 @@ impl Environment {
 
     fn lt(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
-            Some(numbers) => {
+            Some((left, right)) => {
                 if left < right {
                     Cell::True
                 } else {
@@ -145,7 +145,7 @@ impl Environment {
 
     fn lte(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
-            Some(numbers) => {
+            Some((left, right)) => {
                 if left <= right {
                     Cell::True
                 } else {
@@ -158,7 +158,7 @@ impl Environment {
 
     fn eq(args: Cell) -> Cell {
         match Environment::extract_two_numbers(args) {
-            Some(numbers) => {
+            Some((left, right)) => {
                 if left == right {
                     Cell::True
                 } else {
@@ -181,7 +181,7 @@ impl Environment {
                             _ => panic!("Cannot compare {}", cell),
                         }
                     }
-                    Some(numbers[0], numbers[1])
+                    Some((numbers[0], numbers[1]))
                 } else {
                     None
                 }
