@@ -2,6 +2,7 @@ use lisp::lex::{tokenize, parse_tree_from_tokens};
 use lisp::cell::Cell;
 use lisp::env::Environment;
 
+// TODO: eval is getting big, refactor me maybe?
 pub fn eval(token: Cell, env: &mut Environment) -> Cell {
     match token {
         Cell::Symbol(name) => {
@@ -13,40 +14,27 @@ pub fn eval(token: Cell, env: &mut Environment) -> Cell {
         }
         Cell::Number(n) => Cell::Number(n),
         Cell::List(mut tokens) => {
-            // This branch does some heavy lifting
             // match on the first token then take action
             let first = tokens.remove(0);
 
             if let Cell::Symbol(name) = first {
 
-                if let Some(&Cell::Proc(f)) = env.map.get(&name) {
-                    // eval each of the following tokens in the list
+                if let Some(&Cell::Proc(function)) = env.map.get(&name) {
+                    // eager: eval each of the arguments
                     let mut args: Vec<Cell> = Vec::new();
 
                     for arg in tokens {
                         args.push(eval(arg, env));
                     }
-                    // executes the function with evaluated arguments
-                    f(Cell::List(args))
 
+                    // executes the function with arguments
+                    function(Cell::List(args))
                 } else {
-                    // TODO: some keyword implementations here
-                    let result: Cell = match name.as_ref() {
-                        "quote" => {
-                            // returns the following token literally (should it be converted to a symbol?)
-                            tokens.remove(0)
-                        }
-                        "if" => Cell::Nil,
-                        "set!" => {
-                            // usage: set! var_name expression
-                            if let Cell::Symbol(name) = tokens.remove(0) {
-                                let t = eval(tokens.remove(0), env);
-                                env.map.insert(name, t);
-                            }
-
-                            Cell::Nil
-                        }
-
+                    // TODO: should keywords be part of eval?
+                    let result = match name.as_ref() {
+                        "quote" => eval_quote(&mut tokens),
+                        "if" => eval_if(&mut tokens, env),
+                        "set!" => eval_set(&mut tokens, env),
                         _ => Cell::Nil,
                     };
 
@@ -54,13 +42,42 @@ pub fn eval(token: Cell, env: &mut Environment) -> Cell {
                 }
             } else {
                 // first is not a symbol, it's a regular list
-                // TODO: should put back the first element
                 tokens.insert(0, first);
                 Cell::List(tokens)
             }
         }
 
         _ => panic!("Unrecognized token"), //Cell::Nil
+    }
+}
+
+fn eval_set(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+    // usage: set! var_name expression
+    if let Cell::Symbol(name) = args.remove(0) {
+        let t = eval(args.remove(0), env);
+        env.map.insert(name, t);
+    }
+    // assignment expressions return Nil
+    Cell::Nil
+}
+
+fn eval_quote(args: &mut Vec<Cell>) -> Cell {
+    args.remove(0)
+}
+
+// implementation of "if" keyword
+fn eval_if(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+    let has_else = if args.len() == 3 {
+        true
+    } else {
+        false
+    };
+    let condition = args.remove(0);
+
+    match eval(condition, env) {
+        Cell::True => eval(args.remove(0), env),
+        Cell::False if has_else => eval(args.remove(1), env),
+        _ => Cell::Nil,
     }
 }
 
@@ -72,7 +89,7 @@ pub fn parse_and_eval(input: &str, env: &mut Environment) -> Cell {
     eval(tokens.unwrap(), env)
 }
 
-
+// TODO: move tests in separate file
 #[test]
 fn eval_returns_pi() {
     let t = Cell::Symbol("pi".to_string());
