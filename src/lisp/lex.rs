@@ -11,6 +11,7 @@ pub fn tokenize(input: &str) -> Vec<String> {
         if t != "" {
             tokens.push(t.to_string());
         }
+        
     }
 
     tokens

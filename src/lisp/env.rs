@@ -9,7 +9,6 @@ pub struct Environment {
 }
 
 impl Environment {
-
     pub fn new() -> Environment {
         Environment { map: HashMap::new() }
     }

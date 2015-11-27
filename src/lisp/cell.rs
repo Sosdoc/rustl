@@ -43,7 +43,6 @@ impl Display for Cell {
 
 
 impl Cell {
-
     // Returns true if the Cell is atomic, i.e. not a List
     pub fn is_atom(&self) -> bool {
         match *self {
