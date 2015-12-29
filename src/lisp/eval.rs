@@ -1,4 +1,4 @@
-use lisp::lex::{tokenize, parse_tree_from_tokens};
+use lisp::lex::{tokenize, parse_form};
 use lisp::cell::Cell;
 use lisp::env::Environment;
 
@@ -96,9 +96,9 @@ fn eval_if(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
 
 // Utility function
 pub fn parse_and_eval(input: &str, env: &mut Environment) -> Cell {
-    let mut str_vec = tokenize(input);
-    let tokens = parse_tree_from_tokens(&mut str_vec);
-    eval(tokens.unwrap(), env)
+    let mut tokens = tokenize(input);
+    let tree = parse_form(&mut tokens);
+    eval(tree.ok().unwrap(), env)
 }
 
 // TODO: move tests in separate file
