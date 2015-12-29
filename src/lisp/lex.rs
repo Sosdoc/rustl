@@ -31,31 +31,38 @@ fn format_braces(input: &str) -> String {
     input.replace("(", " ( ").replace(")", " ) ").trim().to_string()
 }
 
-pub fn parse_form(tokens: &mut Vec<String>) -> ParseResult {    
+pub fn parse_form(tokens: &mut Vec<String>) -> ParseResult {
     match tokens[0].as_ref() {
         "(" => parse_list(tokens),
+        ")" => Err(ParseError::UnbalancedParens),
         _ => parse_atom(tokens),
     }
 }
 
 fn parse_list(tokens: &mut Vec<String>) -> ParseResult {
-    // TODO: check for unbalanced parens (review loop)
     let mut list: Vec<Cell> = Vec::new();
-    // discard first '('
+    // discard first '(', this should not fail
     tokens.remove(0);
+
+    while !tokens.is_empty() && &tokens[0] != ")" {
+        match parse_form(tokens) {
+            Ok(cell) => list.push(cell),
+            Err(e) => return Err(e),
+        }
+    }
     
-    while &tokens[0] != ")" {
-        list.push(parse_form(tokens).ok().unwrap())
+    if tokens.is_empty() {
+        return Err(ParseError::UnbalancedParens);
     }
     
     tokens.remove(0);
-    
+
     Ok(Cell::List(list))
 }
 
 fn parse_atom(tokens: &mut Vec<String>) -> ParseResult {
     let token = tokens.remove(0);
-    
+
     match try_parse_number(&token) {
         Some(cell) => Ok(cell),
         None => Ok(parse_other_values(&token)),

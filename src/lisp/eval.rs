@@ -98,7 +98,11 @@ fn eval_if(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
 pub fn parse_and_eval(input: &str, env: &mut Environment) -> Cell {
     let mut tokens = tokenize(input);
     let tree = parse_form(&mut tokens);
-    eval(tree.ok().unwrap(), env)
+    // TODO: have descriptive error messages
+    match tree {
+        Ok(cell) => eval(cell, env),
+        Err(_) => Cell::Symbol("error".to_string()),
+    }
 }
 
 // TODO: move tests in separate file
