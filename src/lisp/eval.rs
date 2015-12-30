@@ -2,11 +2,11 @@ use lisp::lex::{tokenize, parse_form};
 use lisp::cell::Cell;
 use lisp::env::Environment;
 
-pub fn eval(token: Cell, env: &mut Environment) -> Cell {
-    match token {
+pub fn eval(ast: Cell, env: &mut Environment) -> Cell {
+    match ast {
         Cell::Symbol(name) => lookup_symbol(name, env),
         Cell::List(tokens) => eval_list(tokens, env),
-        _ => token,
+        _ => ast,
     }
 }
 
@@ -28,7 +28,11 @@ fn lookup_symbol(name: String, env: &Environment) -> Cell {
 // if the first element is a function or keyword, it executes that, otherwise returns
 // the list itself
 fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
-    // match on the first token then take action
+    // empty list -> no action
+    if tokens.is_empty() {
+        return Cell::List(tokens);
+    }
+
     let first = tokens.remove(0);
 
     if let Cell::Symbol(name) = first {
