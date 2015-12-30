@@ -16,7 +16,7 @@ pub enum Cell {
 impl Debug for Cell {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match *self {
-            Cell::Symbol(ref name) => write!(f, "s: {}", name),
+            Cell::Symbol(ref name) => write!(f, "\"{}\"", name),
             Cell::Number(num) => write!(f, "{}", num),
             Cell::List(ref tokens) => write!(f, "{:?}", tokens),
             Cell::Proc(_) => write!(f, "proc"),
@@ -30,7 +30,7 @@ impl Debug for Cell {
 impl Display for Cell {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match *self {
-            Cell::Symbol(ref name) => write!(f, "{}", name),
+            Cell::Symbol(ref name) => write!(f, "\"{}\"", name),
             Cell::Number(number) => write!(f, "{}", number),
             Cell::List(ref tokens) => write!(f, "{:?}", tokens),
             Cell::Proc(_) => write!(f, "proc"),

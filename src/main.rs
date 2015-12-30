@@ -1,6 +1,7 @@
 mod lisp;
 
 use std::io;
+use std::io::Write;
 use lisp::eval::parse_and_eval;
 
 fn main() {
@@ -10,6 +11,9 @@ fn main() {
     println!("^C to exit");
 
     loop {
+        print!(">> ");
+        io::stdout().flush().ok().expect("Cannot flush stdout.");
+
         let mut input: String = String::new();
 
         io::stdin()
@@ -17,6 +21,6 @@ fn main() {
             .ok()
             .expect("Error when reading.");
 
-        println!(":: {}", parse_and_eval(&input, &mut env));
+        println!("{}", parse_and_eval(&input, &mut env));
     }
 }
