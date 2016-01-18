@@ -49,7 +49,7 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
             let result = match name.as_ref() {
                 "quote" => eval_quote(&mut tokens),
                 "if" => eval_if(&mut tokens, env),
-                "set" => eval_set(&mut tokens, env),
+                "def!" => eval_def(&mut tokens, env),
                 _ => Cell::Nil,
             };
 
@@ -62,15 +62,14 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
     }
 }
 
-// Implementation for set
-// usage: (set name value ...)
-fn eval_set(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
-    // usage: set! var_name expression
+// Implementation for def
+// usage: (def! name value ...)
+fn eval_def(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
     if let Cell::Symbol(name) = args.remove(0) {
         let t = eval(args.remove(0), env);
         env.map.insert(name, t);
     }
-    // assignment expressions return Nil
+    // assignment expressions return the assigned value
     Cell::Nil
 }
 

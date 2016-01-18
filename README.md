@@ -1,7 +1,7 @@
 # Rustl
 This is my first attempt at both doing something with Rust and making an interpreter for a simple language.
 
-The actual language is something that *looks like lisp* but it definitely isn't, it was just a way of keeping things simple enough.
+The actual language could be defined as a LISP dialect.
 
 ## Usage
 
@@ -25,7 +25,7 @@ Supported operations are
 - Simple math: `+ - * /`
 - Simple comparisons on numbers: `< > <= >= =`
 - The keywords 
-	- `set` : will set a variable name.
+	- `def!` : will set a variable.
 	- `if`: will evaluate an expression and execute another if that is true.
 	
 It doesn't do much, but you can write expressions using the *convenient* polish notation.
@@ -35,9 +35,9 @@ It doesn't do much, but you can write expressions using the *convenient* polish 
 	
 Also set variables and use them later
 
-	(set half 21)
+	(def! half 21)
 	:: nil
-	(set answer (* half 2))
+	(def! answer (* half 2))
 	:: nil
 	answer
 	:: 42

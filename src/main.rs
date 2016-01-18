@@ -13,7 +13,7 @@ fn main() {
     loop {
         print!(">> ");
         io::stdout().flush().ok().expect("Cannot flush stdout.");
-
+		
         let mut input: String = String::new();
 
         io::stdin()
