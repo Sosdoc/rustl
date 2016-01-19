@@ -57,6 +57,7 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
 
 fn eval_core(keyword: &str, args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
     match keyword {
+        "do" => eval_do(args, env),
         "quote" => eval_quote(args),
         "if" => eval_if(args, env),
         "def!" => eval_def(args, env),
@@ -67,12 +68,23 @@ fn eval_core(keyword: &str, args: &mut Vec<Cell>, env: &mut Environment) -> Cell
 // Implementation for def
 // usage: (def! name value ...)
 fn eval_def(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+    // Check for a symbol as first argument
     if let Cell::Symbol(name) = args.remove(0) {
         let t = eval(args.remove(0), env);
         env.insert(name, t);
     }
-    // assignment expressions return the assigned value
+
     Cell::Nil
+}
+
+fn eval_do(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+    while args.len() > 1 {
+        let term = args.remove(0);
+        eval(term, env);
+    }
+
+    // eval and return last element
+    eval(args.remove(0), env)
 }
 
 // Implementation for quote
