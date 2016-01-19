@@ -6,10 +6,10 @@ use lisp::cell::Cell;
 
 // Adds this module's functions to the provided environment
 pub fn add_module(env: &mut Environment) {
-    env.map.insert("+".to_string(), Cell::Proc(add));
-    env.map.insert("-".to_string(), Cell::Proc(sub));
-    env.map.insert("*".to_string(), Cell::Proc(mul));
-    env.map.insert("/".to_string(), Cell::Proc(div));
+    env.insert("+".to_string(), Cell::Proc(add));
+    env.insert("-".to_string(), Cell::Proc(sub));
+    env.insert("*".to_string(), Cell::Proc(mul));
+    env.insert("/".to_string(), Cell::Proc(div));
 }
 
 fn add(args: Cell) -> Cell {

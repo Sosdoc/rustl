@@ -5,11 +5,11 @@ use lisp::cell::Cell;
 
 // Adds this module's functions to the provided environment
 pub fn add_module(env: &mut Environment) {
-    env.map.insert(">".to_string(), Cell::Proc(gt));
-    env.map.insert(">=".to_string(), Cell::Proc(gte));
-    env.map.insert("<".to_string(), Cell::Proc(lt));
-    env.map.insert("<=".to_string(), Cell::Proc(lte));
-    env.map.insert("=".to_string(), Cell::Proc(eq));
+    env.insert(">".to_string(), Cell::Proc(gt));
+    env.insert(">=".to_string(), Cell::Proc(gte));
+    env.insert("<".to_string(), Cell::Proc(lt));
+    env.insert("<=".to_string(), Cell::Proc(lte));
+    env.insert("=".to_string(), Cell::Proc(eq));
 }
 
 fn gt(args: Cell) -> Cell {

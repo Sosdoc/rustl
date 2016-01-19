@@ -12,7 +12,7 @@ pub fn eval(ast: Cell, env: &mut Environment) -> Cell {
 
 // Looks up the symbol in the environment, returning the associated value
 fn lookup_symbol(name: String, env: &Environment) -> Cell {
-    match env.map.get(&name) {
+    match env.lookup(&name) {
         Some(cell) => {
             match cell {
                 &Cell::Number(n) => Cell::Number(n),
@@ -37,7 +37,7 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
 
     if let Cell::Symbol(name) = first {
 
-        if let Some(&Cell::Proc(function)) = env.map.get(&name) {
+        if let Some(&Cell::Proc(function)) = env.lookup(&name) {
             // eager eval: each of the arguments is evaluated before calling
             let mut args: Vec<Cell> = Vec::new();
             for arg in tokens {
@@ -46,14 +46,7 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
 
             function(Cell::List(args))
         } else {
-            let result = match name.as_ref() {
-                "quote" => eval_quote(&mut tokens),
-                "if" => eval_if(&mut tokens, env),
-                "def!" => eval_def(&mut tokens, env),
-                _ => Cell::Nil,
-            };
-
-            result
+            eval_core(name.as_ref(), &mut tokens, env)
         }
     } else {
         // first is not a symbol, it's a regular list
@@ -62,12 +55,21 @@ fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
     }
 }
 
+fn eval_core(keyword: &str, args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+    match keyword {
+        "quote" => eval_quote(args),
+        "if" => eval_if(args, env),
+        "def!" => eval_def(args, env),
+        _ => Cell::Nil,
+    }
+}
+
 // Implementation for def
 // usage: (def! name value ...)
 fn eval_def(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
     if let Cell::Symbol(name) = args.remove(0) {
         let t = eval(args.remove(0), env);
-        env.map.insert(name, t);
+        env.insert(name, t);
     }
     // assignment expressions return the assigned value
     Cell::Nil
