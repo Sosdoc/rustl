@@ -26,8 +26,8 @@ Supported operations are
 - Simple comparisons on numbers: `< > <= >= =`
 - The keywords
   - `do`: executes the following expressions and returns the last one.
-	- `def!` : will set a variable.
-	- `if`: will evaluate an expression and execute another if that is true.
+  - `def!`: will set a variable.
+  - `if`: will evaluate an expression and execute another if that is true.
 
 You can write expressions using the *convenient* polish notation.
 
