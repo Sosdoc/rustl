@@ -1,4 +1,4 @@
-use lisp::cell::Cell;
+use lisp::types::*;
 
 // TODO: documentation
 
@@ -7,7 +7,7 @@ pub enum ParseError {
     EOFReached,
 }
 
-pub type ParseResult = Result<Cell, ParseError>;
+pub type ParseResult = Result<RLType, ParseError>;
 
 // Produces a vector of Strings, with no empty ones
 pub fn tokenize(input: &str) -> Vec<String> {
@@ -42,7 +42,7 @@ pub fn parse_form(tokens: &mut Vec<String>) -> ParseResult {
 }
 
 fn parse_list(tokens: &mut Vec<String>) -> ParseResult {
-    let mut list: Vec<Cell> = Vec::new();
+    let mut list: Vec<RLType> = Vec::new();
     // discard first '(', this fails of course
     tokens.remove(0);
 
@@ -56,7 +56,7 @@ fn parse_list(tokens: &mut Vec<String>) -> ParseResult {
     }
 
     tokens.remove(0);
-    Ok(Cell::List(list))
+    Ok(RLType::List(list))
 }
 
 fn parse_atom(tokens: &mut Vec<String>) -> ParseResult {
@@ -68,21 +68,21 @@ fn parse_atom(tokens: &mut Vec<String>) -> ParseResult {
     }
 }
 
-fn parse_number(text: &str) -> Option<Cell> {
+fn parse_number(text: &str) -> Option<RLType> {
     let n_f = text.parse::<f32>();
 
     match n_f {
-        Ok(number) => Some(Cell::Number(number)),
+        Ok(number) => Some(RLType::Number(number)),
         Err(_) => None,
     }
 }
 
-fn parse_other_values(text: &str) -> Cell {
+fn parse_other_values(text: &str) -> RLType {
     match text {
-        "#t" => Cell::True,
-        "#f" => Cell::False,
-        "nil" => Cell::Nil,
-        _ => Cell::Symbol(text.to_string()),
+        "#t" => RLType::True,
+        "#f" => RLType::False,
+        "nil" => RLType::Nil,
+        _ => RLType::Symbol(text.to_string()),
     }
 }
 
@@ -90,7 +90,7 @@ fn parse_other_values(text: &str) -> Cell {
 // fn test_parse_atom() {
 //     let atom = vec!["123"];
 //     let token = match try!(parse_atom(atom)) {
-//         Cell::Number(n) => n,
+//         RLType::Number(n) => n,
 //         _ => 0.0,
 //     };
 //
@@ -98,7 +98,7 @@ fn parse_other_values(text: &str) -> Cell {
 //
 //     let atom = "12.3";
 //     let token = match parse_atom(atom) {
-//         Cell::Number(n) => n,
+//         RLType::Number(n) => n,
 //         _ => 0.0,
 //     };
 //
@@ -106,7 +106,7 @@ fn parse_other_values(text: &str) -> Cell {
 //
 //     let atom = "12g.3";
 //     let token = match parse_atom(atom) {
-//         Cell::Symbol(n) => n,
+//         RLType::Symbol(n) => n,
 //         _ => "wat".to_string(),
 //     };
 //

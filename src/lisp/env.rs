@@ -1,35 +1,55 @@
 use std::collections::HashMap;
-use lisp::cell::Cell;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use lisp::types::*;
 
 use lisp::modules::comparison;
 use lisp::modules::math;
 
-pub struct Environment<'a> {
-    map: HashMap<String, Cell>,
-    outer: Option<&'a Environment<'a>>,
+
+pub struct Binding {
+    pub key: String,
+    pub expr: RLType,
 }
 
-impl<'a> Environment<'a> {
-    pub fn new() -> Environment<'a> {
+#[derive(Clone)]
+pub struct Environment {
+    map: HashMap<String, RLType>,
+    outer: Option<Rc<RefCell<Environment>>>,
+}
+
+impl Environment {
+    pub fn new() -> Environment {
         Environment {
             map: HashMap::new(),
             outer: None
         }
     }
 
-    pub fn new_with_outer(outer: &'a Environment) -> Environment<'a> {
+    pub fn new_with_outer(outer: Environment) -> Environment {
         Environment {
             map: HashMap::new(),
-            outer: Some(outer)
+            outer: Some(Rc::new(RefCell::new(outer)))
         }
     }
 
+    pub fn new_with_bindings(outer: Environment, binds: Vec<Binding>) -> Environment {
+        let mut env = Environment::new_with_outer(outer);
+
+        for binding in binds {
+            env.insert(binding.key, binding.expr)
+        }
+
+        env
+    }
+
     // Stub for default Environment
-    pub fn default() -> Environment<'a> {
+    pub fn default() -> Environment {
         let mut env = Environment::new();
 
-        env.map.insert("pi".to_string(), Cell::Number(3.14159265));
-        // TODO: make modules a thing (i.e. Module trait so that the Environment adds it)
+        // TODO: this should be in a separate file
+        env.map.insert("pi".to_string(), RLType::Number(3.14159265));
         math::add_module(&mut env);
         comparison::add_module(&mut env);
 
@@ -38,16 +58,20 @@ impl<'a> Environment<'a> {
 
     // lookup searches in the current environment first, then tries in the outer environment if
     // available.
-    pub fn lookup(&self, name: &String) -> Option<&Cell> {
+    pub fn lookup(&self, name: &String) -> RLResult {
         match self.map.get(name) {
-            Some(c) => Some(c),
-            None if self.outer.is_some() => self.outer.unwrap().lookup(name),
-            _ => None
+            Some(c) => Ok(c.clone()),
+            None => {
+                match self.outer {
+                    Some(ref env) => env.borrow().lookup(name),
+                    None => error("No value for given key"),
+                }
+            },
         }
     }
 
     // insert puts a value in the environment with the specified key (name)
-    pub fn insert(&mut self, name: String, value: Cell) {
+    pub fn insert(&mut self, name: String, value: RLType) {
         self.map.insert(name, value);
     }
 }

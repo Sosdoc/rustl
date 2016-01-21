@@ -3,5 +3,5 @@
 pub mod env;
 pub mod lex;
 pub mod eval;
-pub mod cell;
+pub mod types;
 pub mod modules;

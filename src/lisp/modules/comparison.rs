@@ -1,100 +1,91 @@
 // This module contains comparison functions for numeric values
 
 use lisp::env::Environment;
-use lisp::cell::Cell;
+use lisp::types::*;
 
 // Adds this module's functions to the provided environment
 pub fn add_module(env: &mut Environment) {
-    env.insert(">".to_string(), Cell::Proc(gt));
-    env.insert(">=".to_string(), Cell::Proc(gte));
-    env.insert("<".to_string(), Cell::Proc(lt));
-    env.insert("<=".to_string(), Cell::Proc(lte));
-    env.insert("=".to_string(), Cell::Proc(eq));
+    env.insert(">".to_string(), RLType::Proc(gt));
+    env.insert(">=".to_string(), RLType::Proc(gte));
+    env.insert("<".to_string(), RLType::Proc(lt));
+    env.insert("<=".to_string(), RLType::Proc(lte));
+    env.insert("=".to_string(), RLType::Proc(eq));
 }
 
-fn gt(args: Cell) -> Cell {
-    match extract_two_numbers(args) {
-        Some((left, right)) => {
-            if left > right {
-                Cell::True
-            } else {
-                Cell::False
-            }
+fn gt(args: Vec<RLType>) -> RLResult {
+    if args.len() == 2 {
+        match check_two_numbers(args) {
+            Ok((left, right)) => {
+                if left > right {Ok(RLType::True)} else {Ok(RLType::False)}
+            },
+            Err(e) => Err(e),
         }
-        _ => Cell::Nil,
+    } else {
+        error("Invalid number of arguments")
     }
 }
 
-fn gte(args: Cell) -> Cell {
-    match extract_two_numbers(args) {
-        Some((left, right)) => {
-            if left >= right {
-                Cell::True
-            } else {
-                Cell::False
-            }
+fn gte(args: Vec<RLType>) -> RLResult {
+    if args.len() == 2 {
+        match check_two_numbers(args) {
+            Ok((left, right)) => {
+                if left >= right {Ok(RLType::True)} else {Ok(RLType::False)}
+            },
+            Err(e) => Err(e),
         }
-        _ => Cell::Nil,
+    } else {
+        error("Invalid number of arguments")
     }
 }
 
-fn lt(args: Cell) -> Cell {
-    match extract_two_numbers(args) {
-        Some((left, right)) => {
-            if left < right {
-                Cell::True
-            } else {
-                Cell::False
-            }
+fn lt(args: Vec<RLType>) -> RLResult {
+    if args.len() == 2 {
+        match check_two_numbers(args) {
+            Ok((left, right)) => {
+                if left < right {Ok(RLType::True)} else {Ok(RLType::False)}
+            },
+            Err(e) => Err(e),
         }
-        _ => Cell::Nil,
+    } else {
+        error("Invalid number of arguments")
     }
 }
 
-fn lte(args: Cell) -> Cell {
-    match extract_two_numbers(args) {
-        Some((left, right)) => {
-            if left <= right {
-                Cell::True
-            } else {
-                Cell::False
-            }
+fn lte(args: Vec<RLType>) -> RLResult {
+    if args.len() == 2 {
+        match check_two_numbers(args) {
+            Ok((left, right)) => {
+                if left <= right {Ok(RLType::True)} else {Ok(RLType::False)}
+            },
+            Err(e) => Err(e),
         }
-        _ => Cell::Nil,
+    } else {
+        error("Invalid number of arguments")
     }
 }
 
-fn eq(args: Cell) -> Cell {
-    match extract_two_numbers(args) {
-        Some((left, right)) => {
-            if left == right {
-                Cell::True
-            } else {
-                Cell::False
-            }
+fn eq(args: Vec<RLType>) -> RLResult {
+    if args.len() == 2 {
+        match check_two_numbers(args) {
+            Ok((left, right)) => {
+                if left == right {Ok(RLType::True)} else {Ok(RLType::False)}
+            },
+            Err(e) => Err(e),
         }
-        _ => Cell::Nil,
+    } else {
+        error("Invalid number of arguments")
     }
 }
 
+fn check_two_numbers(args: Vec<RLType>) -> Result<(f32, f32), RLError> {
+    let mut numbers = Vec::new();
 
-fn extract_two_numbers(args: Cell) -> Option<(f32, f32)> {
-    match args {
-        Cell::List(args) => {
-            let mut numbers = vec![];
-
-            if args.len() == 2 {
-                for cell in args {
-                    match cell {
-                        Cell::Number(n) => numbers.push(n),
-                        _ => panic!("Cannot compare {}", cell),
-                    }
-                }
-                Some((numbers[0], numbers[1]))
-            } else {
-                None
-            }
+    for arg in args {
+        match arg {
+            RLType::Number(n) => numbers.push(n),
+            _ => return Err(RLError::Message("Not a number, cannot compare.".to_string())),
         }
-        _ => None,
     }
+
+    Ok((numbers[0], numbers[1]))
 }

@@ -1,101 +1,138 @@
 use lisp::lex::{tokenize, parse_form};
-use lisp::cell::Cell;
+use lisp::types::{RLType, RLResult, error};
 use lisp::env::Environment;
 
-pub fn eval(ast: Cell, env: &mut Environment) -> Cell {
+pub fn eval(ast: RLType, env: &mut Environment) -> RLResult {
     match ast {
-        Cell::Symbol(name) => lookup_symbol(name, env),
-        Cell::List(tokens) => eval_list(tokens, env),
-        _ => ast,
+        RLType::Symbol(name) => lookup_symbol(name, env),
+        RLType::List(tokens) => eval_list(tokens, env),
+        _ => Ok(ast),
     }
 }
 
 // Looks up the symbol in the environment, returning the associated value
-fn lookup_symbol(name: String, env: &Environment) -> Cell {
+fn lookup_symbol(name: String, env: &Environment) -> RLResult {
     match env.lookup(&name) {
-        Some(cell) => {
-            match cell {
-                &Cell::Number(n) => Cell::Number(n),
-                &Cell::Symbol(ref n) => Cell::Symbol(n.to_string()),
-                _ => Cell::Nil,
+        Ok(value) => {
+            match value {
+                RLType::Number(n) => Ok(RLType::Number(n)),
+                RLType::Symbol(ref n) => Ok(RLType::Symbol(n.to_string())),
+                _ => error("Unsupported type."),
             }
         }
-        _ => Cell::Nil,
+        Err(e) => Err(e),
     }
 }
 
 // Evaluates the list
 // if the first element is a function or keyword, it executes that, otherwise returns
 // the list itself
-fn eval_list(mut tokens: Vec<Cell>, env: &mut Environment) -> Cell {
+fn eval_list(mut tokens: Vec<RLType>, env: &mut Environment) -> RLResult {
     // empty list -> no action
     if tokens.is_empty() {
-        return Cell::List(tokens);
+        return Ok(RLType::List(tokens));
     }
 
     let first = tokens.remove(0);
 
-    if let Cell::Symbol(name) = first {
-
-        if let Some(&Cell::Proc(function)) = env.lookup(&name) {
+    if let RLType::Symbol(name) = first {
+        if let Ok(RLType::Proc(func)) = env.lookup(&name) {
             // eager eval: each of the arguments is evaluated before calling
-            let mut args: Vec<Cell> = Vec::new();
+            let mut args: Vec<RLType> = Vec::new();
             for arg in tokens {
-                args.push(eval(arg, env));
+                match eval(arg, env) {
+                    Ok(value) => args.push(value),
+                    Err(e) => return Err(e),
+                }
             }
+            func(args)
 
-            function(Cell::List(args))
         } else {
             eval_core(name.as_ref(), &mut tokens, env)
         }
     } else {
         // first is not a symbol, it's a regular list
         tokens.insert(0, first);
-        Cell::List(tokens)
+        Ok(RLType::List(tokens))
     }
 }
 
-fn eval_core(keyword: &str, args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
     match keyword {
         "do" => eval_do(args, env),
-        "quote" => eval_quote(args),
         "if" => eval_if(args, env),
         "def!" => eval_def(args, env),
-        _ => Cell::Nil,
+        // "quote" => eval_quote(args),
+        // "lambda" => eval_lambda(args, env),
+        _ => error("Unknown symbol."),
     }
 }
+
+// fn eval_lambda (args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
+//     let mut arg_names : Vec<String> = Vec::new();
+//     // get the list of arguments for the lambda
+//     if let RLType::List(mut l_args) = args.remove(0) {
+//         while l_args.len() > 0 {
+//             if let RLType::Symbol(name) = l_args.remove(0) {
+//                 arg_names.push(name);
+//             }
+//         }
+//     }
+//
+//     let lambda_body = args.remove(0);
+//
+//     let lambda = move | exprs: RLType, outer: Environment| -> RLResult {
+//         if let RLType::List(exp_vec) = exprs {
+//             //let evaluated_args = exp_vec.iter().map(|e| eval(e, env));
+//             let mut bindings : Vec<Binding> = Vec::new();
+//
+//             for (name, value) in arg_names.iter().zip(exp_vec) {
+//                 bindings.push(Binding{key:(*name).to_string(), expr:value});
+//             }
+//
+//             // RLType::Nil
+//             let mut lambda_env = Environment::new_with_bindings(outer, bindings);
+//
+//             eval(lambda_body, &mut lambda_env)
+//         } else {
+//             Ok(RLType::Nil)
+//         }
+//     };
+//     Ok(RLType::Nil)
+// }
 
 // Implementation for def
 // usage: (def! name value ...)
-fn eval_def(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+fn eval_def(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
     // Check for a symbol as first argument
-    if let Cell::Symbol(name) = args.remove(0) {
-        let t = eval(args.remove(0), env);
-        env.insert(name, t);
+    if let RLType::Symbol(name) = args.remove(0) {
+        match eval(args.remove(0), env) {
+            Ok(value) => { env.insert(name, value); Ok(RLType::Nil) },
+            Err(e) => Err(e),
+        }
+    } else {
+        error("Lookup key is not a symbol.")
     }
-
-    Cell::Nil
 }
 
-fn eval_do(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+fn eval_do(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
     while args.len() > 1 {
         let term = args.remove(0);
-        eval(term, env);
+        let _ = eval(term, env);
     }
-
     // eval and return last element
     eval(args.remove(0), env)
 }
 
 // Implementation for quote
 // usage: (quote value ...)
-fn eval_quote(args: &mut Vec<Cell>) -> Cell {
-    args.remove(0)
-}
+// fn eval_quote(args: &mut Vec<RLType>) -> RLResult {
+//     unimplemented!()
+// }
 
 // Implementation for if
 // usage: (if test eval_if_true [eval_if_false])
-fn eval_if(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
+fn eval_if(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
     let has_else = if args.len() == 3 {
         true
     } else {
@@ -104,32 +141,33 @@ fn eval_if(args: &mut Vec<Cell>, env: &mut Environment) -> Cell {
     let condition = args.remove(0);
 
     match eval(condition, env) {
-        Cell::True => eval(args.remove(0), env),
-        Cell::False if has_else => eval(args.remove(1), env),
-        _ => Cell::Nil,
+        Ok(RLType::True) => eval(args.remove(0), env),
+        Ok(RLType::False) if has_else => eval(args.remove(1), env),
+        Ok(_) => Ok(RLType::Nil),
+        Err(e) => Err(e),
     }
 }
 
 
-// Utility function
-pub fn parse_and_eval(input: &str, env: &mut Environment) -> Cell {
+// Parses the input &str and evals, for use in the REPL
+pub fn parse_and_eval(input: &str, env: &mut Environment) -> RLResult {
     let mut tokens = tokenize(input);
     let tree = parse_form(&mut tokens);
     // TODO: have descriptive error messages
     match tree {
         Ok(cell) => eval(cell, env),
-        Err(_) => Cell::Symbol("error".to_string()),
+        Err(_) => Ok(RLType::Symbol("parse error.".to_string())),
     }
 }
 
 // TODO: move tests in separate file
 #[test]
 fn eval_returns_pi() {
-    let t = Cell::Symbol("pi".to_string());
+    let t = RLType::Symbol("pi".to_string());
     let mut env = Environment::default();
 
     let res = match eval(t, &mut env) {
-        Cell::Number(n) => n,
+        RLType::Number(n) => n,
         _ => 0.0,
     };
 
@@ -139,28 +177,28 @@ fn eval_returns_pi() {
 
 #[test]
 fn eval_sum() {
-    let args = vec![Cell::Symbol("+".to_string()), Cell::Number(2.0), Cell::Number(1.0)];
+    let args = vec![RLType::Symbol("+".to_string()), RLType::Number(2.0), RLType::Number(1.0)];
 
-    let t = Cell::List(args);
+    let t = RLType::List(args);
     let mut env = Environment::default();
 
     let res = match eval(t, &mut env) {
-        Cell::Number(n) => n,
+        RLType::Number(n) => n,
         _ => 0.0,
     };
 
     assert_eq!(res, 3.0);
 
-    let args = vec![Cell::Symbol("+".to_string()),
-                    Cell::Number(3.0),
-                    Cell::Number(2.0),
-                    Cell::Number(1.0)];
+    let args = vec![RLType::Symbol("+".to_string()),
+                    RLType::Number(3.0),
+                    RLType::Number(2.0),
+                    RLType::Number(1.0)];
 
-    let t = Cell::List(args);
+    let t = RLType::List(args);
     let mut env = Environment::default();
 
     let res = match eval(t, &mut env) {
-        Cell::Number(n) => n,
+        RLType::Number(n) => n,
         _ => 0.0,
     };
 
@@ -170,16 +208,16 @@ fn eval_sum() {
 
 #[test]
 fn eval_sub() {
-    let args = vec![Cell::Symbol("-".to_string()),
-                    Cell::Number(3.0),
-                    Cell::Number(2.0),
-                    Cell::Number(1.0)];
+    let args = vec![RLType::Symbol("-".to_string()),
+                    RLType::Number(3.0),
+                    RLType::Number(2.0),
+                    RLType::Number(1.0)];
 
-    let t = Cell::List(args);
+    let t = RLType::List(args);
     let mut env = Environment::default();
 
     let res = match eval(t, &mut env) {
-        Cell::Number(n) => n,
+        RLType::Number(n) => n,
         _ => -10.0,
     };
 

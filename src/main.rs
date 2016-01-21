@@ -13,7 +13,7 @@ fn main() {
     loop {
         print!(">> ");
         io::stdout().flush().ok().expect("Cannot flush stdout.");
-		
+
         let mut input: String = String::new();
 
         io::stdin()
@@ -21,6 +21,9 @@ fn main() {
             .ok()
             .expect("Error when reading.");
 
-        println!("{}", parse_and_eval(&input, &mut env));
+        match parse_and_eval(&input, &mut env) {
+            Ok(value) => println!("{}", value),
+            Err(error) => println!("Error: {:?}", error.get_message())
+        }
     }
 }
