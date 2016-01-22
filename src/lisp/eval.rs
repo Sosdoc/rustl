@@ -19,20 +19,38 @@ fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
         return Ok(RLType::List(tokens));
     }
 
-    let first = tokens.remove(0);
+    let mut first = tokens.remove(0);
+
+    if !first.is_atom() {
+        first = match eval(first, env) {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        }
+    }
 
     match first {
         RLType::Symbol(name) => {
-
             if let Ok(value) = eval_core(&name, &mut tokens, env) {
                 return Ok(value);
             }
-
             eval_proc(&name, tokens, env)
         },
+        RLType::Lambda(lambda) => {
+            match make_atomic(tokens, env) {
+                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args),
+                Ok(v) => error(format!("args are not a list: {}", v)),
+                Err(e) => Err(e),
+            }
+        }
         _ => {
+            //TODO: use a keyword for making lists!
             tokens.insert(0, first);
-            Ok(RLType::List(tokens))
+
+            match make_atomic(tokens, env) {
+                Ok(RLType::List(elements)) => Ok(RLType::List(elements)),
+                Ok(v) => error(format!("list eval error: {}", v)),
+                Err(e) => Err(e),
+            }
         },
     }
 }
@@ -50,31 +68,25 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &Env) -> RLResult {
 
 fn eval_proc(name: &str, tokens: Vec<RLType>, env: &Env) -> RLResult {
     // TODO: this borrow blocks recursion
-    // test with: (def! fibo ( lambda (n) (if (< n 2) n (+ (fibo (- n 1)) (fibo (- n 2))))))
-    match env.borrow().lookup(name) {
+    // test with: (def! fibo ( lambda (n) (if (<= n 2) n (+ (fibo (- n 1)) (fibo (- n 2))))))
+    let executable = env.borrow().lookup(name);
+
+    match executable {
         Ok(RLType::Proc(func)) => {
-            // eager eval: each of the arguments is evaluated before calling
-            let mut args: Vec<RLType> = Vec::new();
-            for arg in tokens {
-                match eval(arg, env) {
-                    Ok(value) => args.push(value),
-                    Err(e) => return Err(e),
-                }
+            match make_atomic(tokens, env) {
+                Ok(RLType::List(args)) => func(args),
+                Ok(v) => error(format!("args are not a list: {}", v)),
+                Err(e) => Err(e),
             }
-            func(args)
         },
         Ok(RLType::Lambda(lambda)) => {
-            // TODO: refactor argument evaluation
-            let mut args: Vec<RLType> = Vec::new();
-            for arg in tokens {
-                match eval(arg, env) {
-                    Ok(value) => args.push(value),
-                    Err(e) => return Err(e),
-                }
+            match make_atomic(tokens, env) {
+                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args),
+                Ok(v) => error(format!("args are not a list: {}", v)),
+                Err(e) => Err(e),
             }
-            eval_exec_lambda(lambda, &mut args)
         },
-        _ => error(format!("Unknown symbol: {}", name))
+        _ => error(format!("Not a function: {}", name))
     }
 }
 
@@ -187,6 +199,18 @@ pub fn parse_and_eval(input: &str, env: &Env) -> RLResult {
         Ok(cell) => eval(cell, env),
         Err(_) => Ok(RLType::Symbol("parse error.".to_string())),
     }
+}
+
+// evaluates a vector of values so that they are all atomic
+fn make_atomic(tokens: Vec<RLType>, env: &Env) -> RLResult {
+    let mut args: Vec<RLType> = Vec::new();
+    for arg in tokens {
+        match eval(arg, env) {
+            Ok(value) => args.push(value),
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(RLType::List(args))
 }
 
 // TODO: move tests in separate file
