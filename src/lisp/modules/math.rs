@@ -18,12 +18,12 @@ fn add(args: Vec<RLType>) -> RLResult {
         for arg in args {
             sum += match arg {
                 RLType::Number(n) => n,
-                _ => return error("Not a number"),
+                _ => return error(format!("Not a number: {}", arg)),
             }
         }
         Ok(RLType::Number(sum))
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -31,19 +31,19 @@ fn sub(args: Vec<RLType>) -> RLResult {
     if args.len() >= 2 {
         let mut result: f32 = match args[0] {
             RLType::Number(n) => n,
-            _ => return error("Not a number"),
+            _ => return error(format!("Not a number: {}", args[0])),
         };
 
         for i in 1..args.len() {
             result -= match args[i] {
                 RLType::Number(n) => n,
-                _ => return error("Cannot sub: not a number"),
+                _ => return error(format!("Not a number: {}", args[i])),
             }
         }
 
         Ok(RLType::Number(result))
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -54,12 +54,12 @@ fn mul(args: Vec<RLType>) -> RLResult {
         for arg in args {
             total *= match arg {
                 RLType::Number(n) => n,
-                _ => return error("Not a number"),
+                _ => return error(format!("Not a number: {}", arg)),
             }
         }
         Ok(RLType::Number(total))
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -67,18 +67,18 @@ fn div(args: Vec<RLType>) -> RLResult {
     if args.len() >= 2 {
         let mut result: f32 = match args[0] {
             RLType::Number(n) => n,
-            _ => return error("Not a number"),
+            _ => return error(format!("Not a number: {}", args[0])),
         };
 
         for i in 1..args.len() {
             result /= match args[i] {
                 RLType::Number(n) if n != 0.0 => n,
-                _ => return error("Cannot div: not a number"),
+                _ => return error(format!("Not a number: {}", args[i])),
             }
         }
 
         Ok(RLType::Number(result))
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }

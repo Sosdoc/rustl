@@ -21,7 +21,7 @@ fn gt(args: Vec<RLType>) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -34,7 +34,7 @@ fn gte(args: Vec<RLType>) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -47,7 +47,7 @@ fn lt(args: Vec<RLType>) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -60,7 +60,7 @@ fn lte(args: Vec<RLType>) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -73,7 +73,7 @@ fn eq(args: Vec<RLType>) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Invalid number of arguments")
+        error(format!("Invalid number of arguments"))
     }
 }
 
@@ -83,7 +83,7 @@ fn check_two_numbers(args: Vec<RLType>) -> Result<(f32, f32), RLError> {
     for arg in args {
         match arg {
             RLType::Number(n) => numbers.push(n),
-            _ => return Err(RLError::Message("Not a number, cannot compare.".to_string())),
+            _ => return Err(RLError::Message(format!("Not a number: {}", arg))),
         }
     }
 

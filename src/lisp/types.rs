@@ -20,8 +20,9 @@ pub enum RLType {
 
 #[derive(Clone)]
 pub struct RLClosure {
-    env: Env,
-    body: Box<RLType>,
+    pub env: Env,
+    pub ast: Box<RLType>,
+    pub bindings: Vec<String>,
 }
 
 pub enum RLError {
@@ -40,7 +41,7 @@ impl RLError {
 
 pub type RLResult = Result<RLType, RLError>;
 
-pub fn error(message: &str) -> RLResult {
+pub fn error(message: String) -> RLResult {
     Err(RLError::Message(message.to_string()))
 }
 

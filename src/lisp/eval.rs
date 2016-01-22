@@ -1,5 +1,5 @@
 use lisp::lex::{tokenize, parse_form};
-use lisp::types::{RLType, RLResult, error};
+use lisp::types::*;
 use lisp::env::*;
 
 pub fn eval(ast: RLType, env: &Env) -> RLResult {
@@ -21,15 +21,19 @@ fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
 
     let first = tokens.remove(0);
 
-    if let RLType::Symbol(name) = first {
-        match eval_core(&name, &mut tokens, env) {
-            Ok(value) => Ok(value),
-            _ => eval_proc(name, tokens, env),
-        }
-    } else {
-        // first is not a symbol, it's a regular list
-        tokens.insert(0, first);
-        Ok(RLType::List(tokens))
+    match first {
+        RLType::Symbol(name) => {
+
+            if let Ok(value) = eval_core(&name, &mut tokens, env) {
+                return Ok(value);
+            }
+
+            eval_proc(&name, tokens, env)
+        },
+        _ => {
+            tokens.insert(0, first);
+            Ok(RLType::List(tokens))
+        },
     }
 }
 
@@ -38,60 +42,90 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &Env) -> RLResult {
         "do" => eval_do(args, env),
         "if" => eval_if(args, env),
         "def!" => eval_def(args, env),
+        "lambda" => eval_create_lambda(args, env),
         // "quote" => eval_quote(args),
-        // "lambda" => eval_lambda(args, env),
-        _ => error("Unknown symbol."),
+        _ => error(format!("Not a keyword: {}", keyword)),
     }
 }
 
-fn eval_proc(name: String, tokens: Vec<RLType>, env: &Env) -> RLResult {
-    if let Ok(RLType::Proc(func)) = env.borrow().lookup(&name) {
-        // eager eval: each of the arguments is evaluated before calling
-        let mut args: Vec<RLType> = Vec::new();
-        for arg in tokens {
-            match eval(arg, env) {
-                Ok(value) => args.push(value),
-                Err(e) => return Err(e),
+fn eval_proc(name: &str, tokens: Vec<RLType>, env: &Env) -> RLResult {
+    // TODO: this borrow blocks recursion
+    // test with: (def! fibo ( lambda (n) (if (< n 2) n (+ (fibo (- n 1)) (fibo (- n 2))))))
+    match env.borrow().lookup(name) {
+        Ok(RLType::Proc(func)) => {
+            // eager eval: each of the arguments is evaluated before calling
+            let mut args: Vec<RLType> = Vec::new();
+            for arg in tokens {
+                match eval(arg, env) {
+                    Ok(value) => args.push(value),
+                    Err(e) => return Err(e),
+                }
+            }
+            func(args)
+        },
+        Ok(RLType::Lambda(lambda)) => {
+            // TODO: refactor argument evaluation
+            let mut args: Vec<RLType> = Vec::new();
+            for arg in tokens {
+                match eval(arg, env) {
+                    Ok(value) => args.push(value),
+                    Err(e) => return Err(e),
+                }
+            }
+            eval_exec_lambda(lambda, &mut args)
+        },
+        _ => error(format!("Unknown symbol: {}", name))
+    }
+}
+
+fn eval_exec_lambda(l: RLClosure, args: &mut Vec<RLType>) -> RLResult {
+    if l.bindings.len() != args.len() {
+        return error(format!("Invalid number of arguments for lambda: {}", args.len()));
+    }
+
+    // bind the args to the environment
+    for i in 0..l.bindings.len() {
+        l.env.borrow_mut().insert(l.bindings[i].clone(), args.remove(0));
+    }
+
+    // executes the lambda
+    eval(*l.ast, &l.env)
+}
+
+// lambda keyword
+// usage: lambda (params) (body)
+// returns a closure, params should be symbols
+fn eval_create_lambda( args: &mut Vec<RLType>, outer: &Env) -> RLResult {
+
+    if args.len() > 2 || args.len() < 1 {
+        return error(format!(
+            "Invalid number of parameters for lambda: {}",
+            args.len()))
+    }
+
+    let mut params: Vec<String> = Vec::new();
+
+    // extract parameters if present
+    if args.len() == 2 {
+        if let RLType::List(values) = args.remove(0) {
+            for value in values {
+                match value {
+                    RLType::Symbol(ref name) => params.push(name.to_owned()),
+                    _ => return error(format!("Parameter is not a symbol: {}", value)),
+                }
             }
         }
-    return func(args)
     }
-    error("Unknown Symbol.")
+
+    let lambda_env = Environment::new_with_outer(outer);
+    let lambda = RLClosure {
+        env: lambda_env,
+        ast: Box::new(args.remove(0)),
+        bindings: params
+    };
+
+    Ok(RLType::Lambda(lambda))
 }
-
-
-// fn eval_lambda (args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
-//     let mut arg_names : Vec<String> = Vec::new();
-//     // get the list of arguments for the lambda
-//     if let RLType::List(mut l_args) = args.remove(0) {
-//         while l_args.len() > 0 {
-//             if let RLType::Symbol(name) = l_args.remove(0) {
-//                 arg_names.push(name);
-//             }
-//         }
-//     }
-//
-//     let lambda_body = args.remove(0);
-//
-//     let lambda = move | exprs: RLType, outer: Environment| -> RLResult {
-//         if let RLType::List(exp_vec) = exprs {
-//             //let evaluated_args = exp_vec.iter().map(|e| eval(e, env));
-//             let mut bindings : Vec<Binding> = Vec::new();
-//
-//             for (name, value) in arg_names.iter().zip(exp_vec) {
-//                 bindings.push(Binding{key:(*name).to_string(), expr:value});
-//             }
-//
-//             // RLType::Nil
-//             let mut lambda_env = Environment::new_with_bindings(outer, bindings);
-//
-//             eval(lambda_body, &mut lambda_env)
-//         } else {
-//             Ok(RLType::Nil)
-//         }
-//     };
-//     Ok(RLType::Nil)
-// }
 
 // Implementation for def
 // usage: (def! name value ...)
@@ -106,7 +140,7 @@ fn eval_def(args: &mut Vec<RLType>, env: &Env) -> RLResult {
             Err(e) => Err(e),
         }
     } else {
-        error("Lookup key is not a symbol.")
+        error(format!("def!: key is not a symbol"))
     }
 }
 
@@ -148,7 +182,7 @@ fn eval_if(args: &mut Vec<RLType>, env: &Env) -> RLResult {
 pub fn parse_and_eval(input: &str, env: &Env) -> RLResult {
     let mut tokens = tokenize(input);
     let tree = parse_form(&mut tokens);
-    // TODO: have descriptive error messages
+
     match tree {
         Ok(cell) => eval(cell, env),
         Err(_) => Ok(RLType::Symbol("parse error.".to_string())),

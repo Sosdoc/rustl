@@ -15,7 +15,7 @@ fn main() {
         io::stdout().flush().ok().expect("Cannot flush stdout.");
 
         let mut input: String = String::new();
-
+        
         io::stdin()
             .read_line(&mut input)
             .ok()

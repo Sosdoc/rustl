@@ -7,12 +7,6 @@ use lisp::types::*;
 use lisp::modules::comparison;
 use lisp::modules::math;
 
-
-pub struct Binding {
-    pub key: String,
-    pub expr: RLType,
-}
-
 pub struct Environment {
     map: HashMap<String, RLType>,
     outer: Option<Env>,
@@ -39,18 +33,7 @@ impl Environment {
         Rc::new(RefCell::new(env))
     }
 
-    pub fn new_with_bindings(outer: &Env, binds: Vec<Binding>) -> Env {
-        // Clone will add to the count of Rc in Env
-        let env = Environment::new_with_outer(outer);
-
-        for binding in binds {
-            env.borrow_mut().insert(binding.key, binding.expr)
-        }
-
-        env
-    }
-
-    // Stub for default Environment
+    // A default Environment with core functions
     pub fn default() -> Env {
         let mut env = Environment::new();
 
@@ -64,13 +47,15 @@ impl Environment {
 
     // lookup searches in the current environment first, then tries in the outer environment if
     // available.
+    // Values are currently cloned on retrieval... this could be costly, wrapping data types with
+    // Rc pointers would be nice, but eval.rs has to be refactored to use immutable references.
     pub fn lookup(&self, name: &str) -> RLResult {
         match self.map.get(name) {
             Some(c) => Ok(c.clone()),
             None => {
                 match self.outer {
                     Some(ref env) => env.borrow().lookup(name),
-                    None => error("No value for given key"),
+                    None => error(format!("No value for given key: {}", name)),
                 }
             },
         }
