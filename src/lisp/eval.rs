@@ -42,16 +42,7 @@ fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
                 Err(e) => Err(e),
             }
         }
-        _ => {
-            //TODO: use a keyword for making lists!
-            tokens.insert(0, first);
-
-            match make_atomic(tokens, env) {
-                Ok(RLType::List(elements)) => Ok(RLType::List(elements)),
-                Ok(v) => error(format!("list eval error: {}", v)),
-                Err(e) => Err(e),
-            }
-        },
+        _ => error(format!("Element is not a function: {}", first)),
     }
 }
 
@@ -61,13 +52,12 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &Env) -> RLResult {
         "if" => eval_if(args, env),
         "def!" => eval_def(args, env),
         "lambda" => eval_create_lambda(args, env),
-        // "quote" => eval_quote(args),
+        "list" => eval_make_list(args, env),
         _ => error(format!("Not a keyword: {}", keyword)),
     }
 }
 
 fn eval_proc(name: &str, tokens: Vec<RLType>, env: &Env) -> RLResult {
-    // TODO: this borrow blocks recursion
     // test with: (def! fibo ( lambda (n) (if (<= n 2) n (+ (fibo (- n 1)) (fibo (- n 2))))))
     let executable = env.borrow().lookup(name);
 
@@ -165,11 +155,15 @@ fn eval_do(args: &mut Vec<RLType>, env: &Env) -> RLResult {
     eval(args.remove(0), env)
 }
 
-// Implementation for quote
-// usage: (quote value ...)
-// fn eval_quote(args: &mut Vec<RLType>) -> RLResult {
-//     unimplemented!()
-// }
+// Implementation for list
+// usage: (list v1 v2 ...)
+fn eval_make_list(args: &Vec<RLType>, env: &Env) -> RLResult {
+    match make_atomic(args.clone(), env) {
+        Ok(RLType::List(elements)) => Ok(RLType::List(elements)),
+        Ok(v) => error(format!("list eval error: {}", v)),
+        Err(e) => Err(e),
+    }
+}
 
 // Implementation for if
 // usage: (if test eval_if_true [eval_if_false])

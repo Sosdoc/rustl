@@ -25,6 +25,7 @@ Supported operations are
 - Simple math: `+ - * /`
 - Simple comparisons on numbers: `< > <= >= =`
 - The keywords
+  - `list`: returns a list with the arguments provided
   - `do`: executes the following expressions and returns the last one.
   - `def!`: will set a variable.
   - `if`: will evaluate an expression and execute another if that is true.
@@ -33,8 +34,8 @@ Supported operations are
 You can write expressions using the *convenient* polish notation.
 
 ```
->> (+ 12 (- 1 2 3))
-8
+>> (+ 12 (- 5 2))
+15
 ```
 
 Set variables and use them later
@@ -50,14 +51,14 @@ nil
 
 Do *wonderfully pointless* stuff with conditions!
 ```
->> (if (= answer 42) (#t))
-[#t]
+>> (if (= answer 42) #t)
+#t
 ```
 
 Or, you know, use functions (only lambda keyword at the moment):
 
 ```
->> (def! max (lambda (a b) (if (> a b) a b ) ) )
+>> ( def! max (lambda (a b) (if (> a b) a b)) )
 nil
 >> (max 21 42)
 42
