@@ -1,15 +1,15 @@
 // This module contains comparison functions for numeric values
 
-use lisp::env::Environment;
+use lisp::env::Env;
 use lisp::types::*;
 
 
 // Adds this module's functions to the provided environment
-pub fn add_module(env: &mut Environment) {
-    env.insert("+".to_string(), RLType::Proc(add));
-    env.insert("-".to_string(), RLType::Proc(sub));
-    env.insert("*".to_string(), RLType::Proc(mul));
-    env.insert("/".to_string(), RLType::Proc(div));
+pub fn add_module(env: &mut Env) {
+    env.borrow_mut().insert("+".to_string(), RLType::Proc(add));
+    env.borrow_mut().insert("-".to_string(), RLType::Proc(sub));
+    env.borrow_mut().insert("*".to_string(), RLType::Proc(mul));
+    env.borrow_mut().insert("/".to_string(), RLType::Proc(div));
 }
 
 fn add(args: Vec<RLType>) -> RLResult {

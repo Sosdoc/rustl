@@ -1,6 +1,8 @@
 use std;
 use std::fmt::{Debug, Display, Formatter};
 
+use lisp::env::*;
+
 // The RLType (RustLisp) enum wraps all possible values in the language.
 // It can be atomic (a string, function, number or one of the default values),
 // or a list of other RLTypes, internally represented with a Vec
@@ -12,7 +14,14 @@ pub enum RLType {
     Symbol(String),
     Number(f32),
     Proc(fn(Vec<RLType>) -> RLResult),
+    Lambda(RLClosure),
     List(Vec<RLType>),
+}
+
+#[derive(Clone)]
+pub struct RLClosure {
+    env: Env,
+    body: Box<RLType>,
 }
 
 pub enum RLError {
@@ -42,6 +51,7 @@ impl Debug for RLType {
             RLType::Number(num) => write!(f, "{}", num),
             RLType::List(ref tokens) => write!(f, "{:?}", tokens),
             RLType::Proc(_) => write!(f, "proc"),
+            RLType::Lambda(_) => write!(f, "lambda"),
             RLType::True => write!(f, "#t"),
             RLType::False => write!(f, "#f"),
             RLType::Nil => write!(f, "nil"),
@@ -57,6 +67,7 @@ impl Display for RLType {
             RLType::Number(number) => write!(f, "{}", number),
             RLType::List(ref tokens) => write!(f, "{:?}", tokens),
             RLType::Proc(_) => write!(f, "proc"),
+            RLType::Lambda(_) => write!(f, "lambda"),
             RLType::True => write!(f, "#t"),
             RLType::False => write!(f, "#f"),
             RLType::Nil => write!(f, "nil"),

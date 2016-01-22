@@ -13,43 +13,49 @@ pub struct Binding {
     pub expr: RLType,
 }
 
-#[derive(Clone)]
 pub struct Environment {
     map: HashMap<String, RLType>,
-    outer: Option<Rc<RefCell<Environment>>>,
+    outer: Option<Env>,
 }
 
+pub type Env = Rc<RefCell<Environment>>;
+
 impl Environment {
-    pub fn new() -> Environment {
-        Environment {
+    pub fn new() -> Env {
+        let env = Environment {
             map: HashMap::new(),
             outer: None
-        }
+        };
+
+        Rc::new(RefCell::new(env))
     }
 
-    pub fn new_with_outer(outer: Environment) -> Environment {
-        Environment {
+    pub fn new_with_outer(outer: &Env) -> Env {
+        let env = Environment {
             map: HashMap::new(),
-            outer: Some(Rc::new(RefCell::new(outer)))
-        }
+            outer: Some(outer.clone())
+        };
+
+        Rc::new(RefCell::new(env))
     }
 
-    pub fn new_with_bindings(outer: Environment, binds: Vec<Binding>) -> Environment {
-        let mut env = Environment::new_with_outer(outer);
+    pub fn new_with_bindings(outer: &Env, binds: Vec<Binding>) -> Env {
+        // Clone will add to the count of Rc in Env
+        let env = Environment::new_with_outer(outer);
 
         for binding in binds {
-            env.insert(binding.key, binding.expr)
+            env.borrow_mut().insert(binding.key, binding.expr)
         }
 
         env
     }
 
     // Stub for default Environment
-    pub fn default() -> Environment {
+    pub fn default() -> Env {
         let mut env = Environment::new();
 
         // TODO: this should be in a separate file
-        env.map.insert("pi".to_string(), RLType::Number(3.14159265));
+        env.borrow_mut().insert("pi".to_string(), RLType::Number(3.14159265));
         math::add_module(&mut env);
         comparison::add_module(&mut env);
 
@@ -58,7 +64,7 @@ impl Environment {
 
     // lookup searches in the current environment first, then tries in the outer environment if
     // available.
-    pub fn lookup(&self, name: &String) -> RLResult {
+    pub fn lookup(&self, name: &str) -> RLResult {
         match self.map.get(name) {
             Some(c) => Ok(c.clone()),
             None => {

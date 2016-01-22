@@ -1,33 +1,19 @@
 use lisp::lex::{tokenize, parse_form};
 use lisp::types::{RLType, RLResult, error};
-use lisp::env::Environment;
+use lisp::env::*;
 
-pub fn eval(ast: RLType, env: &mut Environment) -> RLResult {
+pub fn eval(ast: RLType, env: &Env) -> RLResult {
     match ast {
-        RLType::Symbol(name) => lookup_symbol(name, env),
+        RLType::Symbol(ref name) => env.borrow().lookup(name),
         RLType::List(tokens) => eval_list(tokens, env),
         _ => Ok(ast),
-    }
-}
-
-// Looks up the symbol in the environment, returning the associated value
-fn lookup_symbol(name: String, env: &Environment) -> RLResult {
-    match env.lookup(&name) {
-        Ok(value) => {
-            match value {
-                RLType::Number(n) => Ok(RLType::Number(n)),
-                RLType::Symbol(ref n) => Ok(RLType::Symbol(n.to_string())),
-                _ => error("Unsupported type."),
-            }
-        }
-        Err(e) => Err(e),
     }
 }
 
 // Evaluates the list
 // if the first element is a function or keyword, it executes that, otherwise returns
 // the list itself
-fn eval_list(mut tokens: Vec<RLType>, env: &mut Environment) -> RLResult {
+fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
     // empty list -> no action
     if tokens.is_empty() {
         return Ok(RLType::List(tokens));
@@ -36,19 +22,9 @@ fn eval_list(mut tokens: Vec<RLType>, env: &mut Environment) -> RLResult {
     let first = tokens.remove(0);
 
     if let RLType::Symbol(name) = first {
-        if let Ok(RLType::Proc(func)) = env.lookup(&name) {
-            // eager eval: each of the arguments is evaluated before calling
-            let mut args: Vec<RLType> = Vec::new();
-            for arg in tokens {
-                match eval(arg, env) {
-                    Ok(value) => args.push(value),
-                    Err(e) => return Err(e),
-                }
-            }
-            func(args)
-
-        } else {
-            eval_core(name.as_ref(), &mut tokens, env)
+        match eval_core(&name, &mut tokens, env) {
+            Ok(value) => Ok(value),
+            _ => eval_proc(name, tokens, env),
         }
     } else {
         // first is not a symbol, it's a regular list
@@ -57,7 +33,7 @@ fn eval_list(mut tokens: Vec<RLType>, env: &mut Environment) -> RLResult {
     }
 }
 
-fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
+fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &Env) -> RLResult {
     match keyword {
         "do" => eval_do(args, env),
         "if" => eval_if(args, env),
@@ -67,6 +43,22 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &mut Environment) -> RL
         _ => error("Unknown symbol."),
     }
 }
+
+fn eval_proc(name: String, tokens: Vec<RLType>, env: &Env) -> RLResult {
+    if let Ok(RLType::Proc(func)) = env.borrow().lookup(&name) {
+        // eager eval: each of the arguments is evaluated before calling
+        let mut args: Vec<RLType> = Vec::new();
+        for arg in tokens {
+            match eval(arg, env) {
+                Ok(value) => args.push(value),
+                Err(e) => return Err(e),
+            }
+        }
+    return func(args)
+    }
+    error("Unknown Symbol.")
+}
+
 
 // fn eval_lambda (args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
 //     let mut arg_names : Vec<String> = Vec::new();
@@ -103,11 +95,14 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &mut Environment) -> RL
 
 // Implementation for def
 // usage: (def! name value ...)
-fn eval_def(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
+fn eval_def(args: &mut Vec<RLType>, env: &Env) -> RLResult {
     // Check for a symbol as first argument
     if let RLType::Symbol(name) = args.remove(0) {
         match eval(args.remove(0), env) {
-            Ok(value) => { env.insert(name, value); Ok(RLType::Nil) },
+            Ok(value) => {
+                env.borrow_mut().insert(name, value);
+                Ok(RLType::Nil)
+            },
             Err(e) => Err(e),
         }
     } else {
@@ -115,7 +110,7 @@ fn eval_def(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
     }
 }
 
-fn eval_do(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
+fn eval_do(args: &mut Vec<RLType>, env: &Env) -> RLResult {
     while args.len() > 1 {
         let term = args.remove(0);
         let _ = eval(term, env);
@@ -132,7 +127,7 @@ fn eval_do(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
 
 // Implementation for if
 // usage: (if test eval_if_true [eval_if_false])
-fn eval_if(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
+fn eval_if(args: &mut Vec<RLType>, env: &Env) -> RLResult {
     let has_else = if args.len() == 3 {
         true
     } else {
@@ -150,7 +145,7 @@ fn eval_if(args: &mut Vec<RLType>, env: &mut Environment) -> RLResult {
 
 
 // Parses the input &str and evals, for use in the REPL
-pub fn parse_and_eval(input: &str, env: &mut Environment) -> RLResult {
+pub fn parse_and_eval(input: &str, env: &Env) -> RLResult {
     let mut tokens = tokenize(input);
     let tree = parse_form(&mut tokens);
     // TODO: have descriptive error messages
