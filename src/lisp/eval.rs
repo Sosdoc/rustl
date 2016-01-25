@@ -22,10 +22,7 @@ fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
     let mut first = tokens.remove(0);
 
     if !first.is_atom() {
-        first = match eval(first, env) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        }
+        first = try!(eval(first, env));
     }
 
     match first {
@@ -37,7 +34,7 @@ fn eval_list(mut tokens: Vec<RLType>, env: &Env) -> RLResult {
         },
         RLType::Lambda(lambda) => {
             match make_atomic(tokens, env) {
-                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args),
+                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args, env),
                 Ok(v) => error(format!("args are not a list: {}", v)),
                 Err(e) => Err(e),
             }
@@ -51,7 +48,7 @@ fn eval_core(keyword: &str, args: &mut Vec<RLType>, env: &Env) -> RLResult {
         "do" => eval_do(args, env),
         "if" => eval_if(args, env),
         "def!" => eval_def(args, env),
-        "lambda" => eval_create_lambda(args, env),
+        "lambda" => eval_create_lambda(args),
         "list" => eval_make_list(args, env),
         _ => error(format!("Not a keyword: {}", keyword)),
     }
@@ -71,7 +68,7 @@ fn eval_proc(name: &str, tokens: Vec<RLType>, env: &Env) -> RLResult {
         },
         Ok(RLType::Lambda(lambda)) => {
             match make_atomic(tokens, env) {
-                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args),
+                Ok(RLType::List(ref mut args)) => eval_exec_lambda(lambda, args, env),
                 Ok(v) => error(format!("args are not a list: {}", v)),
                 Err(e) => Err(e),
             }
@@ -80,24 +77,26 @@ fn eval_proc(name: &str, tokens: Vec<RLType>, env: &Env) -> RLResult {
     }
 }
 
-fn eval_exec_lambda(l: RLClosure, args: &mut Vec<RLType>) -> RLResult {
+fn eval_exec_lambda(l: RLClosure, args: &mut Vec<RLType>, outer: &Env) -> RLResult {
     if l.bindings.len() != args.len() {
         return error(format!("Invalid number of arguments for lambda: {}", args.len()));
     }
 
+    let lambda_env = Environment::new_with_outer(outer);
     // bind the args to the environment
     for i in 0..l.bindings.len() {
-        l.env.borrow_mut().insert(l.bindings[i].clone(), args.remove(0));
+        let atom_arg = try!(eval(args.remove(0), outer));
+        lambda_env.borrow_mut().insert(l.bindings[i].clone(), atom_arg);
     }
 
     // executes the lambda
-    eval(*l.ast, &l.env)
+    eval(*l.ast, &lambda_env)
 }
 
 // lambda keyword
 // usage: lambda (params) (body)
 // returns a closure, params should be symbols
-fn eval_create_lambda( args: &mut Vec<RLType>, outer: &Env) -> RLResult {
+fn eval_create_lambda( args: &mut Vec<RLType>) -> RLResult {
 
     if args.len() > 2 || args.len() < 1 {
         return error(format!(
@@ -119,9 +118,7 @@ fn eval_create_lambda( args: &mut Vec<RLType>, outer: &Env) -> RLResult {
         }
     }
 
-    let lambda_env = Environment::new_with_outer(outer);
     let lambda = RLClosure {
-        env: lambda_env,
         ast: Box::new(args.remove(0)),
         bindings: params
     };
@@ -134,13 +131,9 @@ fn eval_create_lambda( args: &mut Vec<RLType>, outer: &Env) -> RLResult {
 fn eval_def(args: &mut Vec<RLType>, env: &Env) -> RLResult {
     // Check for a symbol as first argument
     if let RLType::Symbol(name) = args.remove(0) {
-        match eval(args.remove(0), env) {
-            Ok(value) => {
-                env.borrow_mut().insert(name, value);
-                Ok(RLType::Nil)
-            },
-            Err(e) => Err(e),
-        }
+        let value = try!(eval(args.remove(0), env));
+        env.borrow_mut().insert(name, value);
+        Ok(RLType::Nil)
     } else {
         error(format!("def!: key is not a symbol"))
     }
@@ -199,10 +192,8 @@ pub fn parse_and_eval(input: &str, env: &Env) -> RLResult {
 fn make_atomic(tokens: Vec<RLType>, env: &Env) -> RLResult {
     let mut args: Vec<RLType> = Vec::new();
     for arg in tokens {
-        match eval(arg, env) {
-            Ok(value) => args.push(value),
-            Err(e) => return Err(e),
-        }
+        let value = try!(eval(arg, env));
+        args.push(value);
     }
     Ok(RLType::List(args))
 }

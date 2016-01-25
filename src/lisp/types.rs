@@ -1,8 +1,6 @@
 use std;
 use std::fmt::{Debug, Display, Formatter};
 
-use lisp::env::*;
-
 // The RLType (RustLisp) enum wraps all possible values in the language.
 // It can be atomic (a string, function, number or one of the default values),
 // or a list of other RLTypes, internally represented with a Vec
@@ -20,7 +18,6 @@ pub enum RLType {
 
 #[derive(Clone)]
 pub struct RLClosure {
-    pub env: Env,
     pub ast: Box<RLType>,
     pub bindings: Vec<String>,
 }
