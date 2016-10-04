@@ -1,7 +1,5 @@
 # Rustl
-This is my first attempt at both doing something with Rust and making an interpreter for a simple language.
-
-The actual language could be defined as a LISP dialect.
+This is an interpreter for a simple Lisp-like language. It supports evaluation of expressions, defining and running closures. This was done as part of my efforts in learning Rust. 
 
 ## Usage
 
@@ -14,19 +12,13 @@ You'll see the REPL:
 	Lispr interpreter - v 0.1
 	^C to exit
 
-At the moment the language is pretty basic, it can only evaluate single
-expressions wrapped by parenthesis.
-
-There is no proper grammar, nor a proper parser, both are things that I
-might add in the future.
-
 Supported operations are
 
 - Simple math: `+ - * /`
 - Simple comparisons on numbers: `< > <= >= =`
 - The keywords
   - `list`: returns a list with the arguments provided
-  - `do`: executes the following expressions and returns the last one.
+  - `do`: executes the following list of expressions and returns the last one.
   - `def!`: will set a variable.
   - `if`: will evaluate an expression and execute another if that is true.
   - `lambda`: creates a new closure with the parameters and specified body.
@@ -55,11 +47,35 @@ Do *wonderfully pointless* stuff with conditions!
 #t
 ```
 
-Or, you know, use functions (only lambda keyword at the moment):
+Or, you know, declare and use functions with the lambda keyword:
 
 ```
 >> ( def! max (lambda (a b) (if (> a b) a b)) )
 nil
 >> (max 21 42)
 42
+```
+
+Run multiple expressions (a list of expressions) using the `do` keyword.
+Consider this program:
+
+```
+(do list 
+    (def! x 10) 
+    (def! add_x (
+        lambda (a) (
+             + a x 
+        ) 
+    ))
+    (add_x 90)
+)
+```
+It defines the binding `x` and the lambda `add_x`, which will reference `x` when executed.
+When run in the interpreter (note that the REPL doesn't parse over multiple lines):
+
+```
+>> (do list (def! x 10) (def! add_x (lambda (a) (+ a x))) (add_x 90))
+100
+>> (add_x -10)
+0
 ```
